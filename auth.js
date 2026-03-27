@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { open } from "open";
+import open from "open";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
