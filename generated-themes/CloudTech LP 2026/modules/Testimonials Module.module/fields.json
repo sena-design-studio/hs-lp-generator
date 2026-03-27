@@ -1,0 +1,114 @@
+[
+  {
+    "id": "lp-test-title",
+    "name": "module_title",
+    "label": "Section Title",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Trusted by teams who can’t afford downtime"
+  },
+  {
+    "id": "lp-test-items",
+    "name": "testimonial",
+    "label": "Testimonials",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 1,
+      "max": 3,
+      "sorting_label_field": null,
+      "default": null
+    },
+    "children": [
+      {
+        "id": "lp-test-logo",
+        "name": "testimonial_logo",
+        "label": "Company Logo",
+        "required": false,
+        "locked": false,
+        "responsive": true,
+        "resizable": true,
+        "show_loading": false,
+        "display_width": null,
+        "type": "image",
+        "default": {
+          "size_type": "auto",
+          "src": "",
+          "alt": "",
+          "loading": "lazy"
+        }
+      },
+      {
+        "id": "lp-test-text",
+        "name": "testimonial_text",
+        "label": "Quote",
+        "required": false,
+        "locked": false,
+        "display_width": null,
+        "type": "richtext"
+      },
+      {
+        "id": "lp-test-author",
+        "name": "author",
+        "label": "Author Name",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text"
+      },
+      {
+        "id": "lp-test-company",
+        "name": "company",
+        "label": "Company / Role",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text"
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": [
+      {
+        "testimonial_logo": {
+          "size_type": "auto",
+          "src": "",
+          "alt": "",
+          "loading": "lazy"
+        },
+        "testimonial_text": "<p>We migrated 40TB of production data to Cloud NAS in a single weekend. Zero downtime, zero data loss. The CloudTech team made something that should have taken months feel routine.</p>",
+        "author": "Sarah Mitchell",
+        "company": "CTO, Nexus Financial Group"
+      },
+      {
+        "testimonial_logo": {
+          "size_type": "auto",
+          "src": "",
+          "alt": "",
+          "loading": "lazy"
+        },
+        "testimonial_text": "<p>The performance is genuinely remarkable. We’re running real-time video editing workflows across three continents over Cloud NAS. I would not have believed it was possible a year ago.</p>",
+        "author": "Daniel Okonkwo",
+        "company": "Head of Infrastructure, Framelab Studios"
+      },
+      {
+        "testimonial_logo": {
+          "size_type": "auto",
+          "src": "",
+          "alt": "",
+          "loading": "lazy"
+        },
+        "testimonial_text": "<p>CloudTech’s compliance tooling alone saved us months of work on our ISO 27001 audit. Everything we needed was already there, documented, and audit-ready.</p>",
+        "author": "Priya Nair",
+        "company": "IT Director, Meridian Healthcare"
+      }
+    ]
+  }
+]

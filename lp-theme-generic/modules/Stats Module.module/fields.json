@@ -1,0 +1,81 @@
+[
+  {
+    "id": "st-title",
+    "name": "section_title",
+    "label": "Section Title",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "st-background",
+    "name": "background",
+    "label": "Background",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      ["none", "None"],
+      ["light", "Light"],
+      ["primary", "Primary colour"]
+    ],
+    "default": "primary"
+  },
+  {
+    "id": "st-stats",
+    "name": "stats",
+    "label": "Stats",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 2,
+      "max": 4,
+      "sorting_label_field": null,
+      "default": 3
+    },
+    "children": [
+      {
+        "id": "st-stat-number",
+        "name": "number",
+        "label": "Number / Value",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "st-stat-label",
+        "name": "label",
+        "label": "Label",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "st-stat-suffix",
+        "name": "suffix",
+        "label": "Suffix (e.g. +, %, x)",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": []
+  }
+]

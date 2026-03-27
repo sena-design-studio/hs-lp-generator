@@ -1,0 +1,67 @@
+.lp-logo-carousel {
+  padding: 40px 0;
+  margin-bottom: 60px;
+  background: var(--secondary);
+}
+
+.lp-logo-carousel__title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  opacity: 0.5;
+  margin-bottom: 0;
+}
+
+.lp-logo-carousel__track {
+  overflow: hidden;
+  width: 100%;
+}
+
+.lp-logo-carousel__inner {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: max-content;
+  animation: lp-scroll 30s linear infinite;
+}
+
+.lp-logo-carousel__inner:hover {
+  animation-play-state: paused;
+}
+
+@keyframes lp-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-logo-carousel__inner {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.lp-logo-carousel__item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-logo-carousel__item img {
+  max-height: 44px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: grayscale(100%);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+
+.lp-logo-carousel__item img:hover {
+  opacity: 1;
+  filter: grayscale(0%);
+}

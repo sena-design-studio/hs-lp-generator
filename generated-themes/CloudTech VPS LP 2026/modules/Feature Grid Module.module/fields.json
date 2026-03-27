@@ -1,0 +1,165 @@
+[
+  {
+    "id": "fg-title",
+    "name": "section_title",
+    "label": "Section Title",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Infrastructure you can rely on"
+  },
+  {
+    "id": "fg-intro",
+    "name": "section_intro",
+    "label": "Intro Text",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "richtext",
+    "default": "<p>Every CloudTech VPS is built on the same principles that power our enterprise platform — security, reliability, and the ability to scale without friction.</p>"
+  },
+  {
+    "id": "fg-columns",
+    "name": "columns",
+    "label": "Columns",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      [
+        "2",
+        "2 columns"
+      ],
+      [
+        "3",
+        "3 columns"
+      ],
+      [
+        "4",
+        "4 columns"
+      ]
+    ],
+    "default": "3"
+  },
+  {
+    "id": "fg-icon-style",
+    "name": "icon_style",
+    "label": "Icon/image style",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      [
+        "circle",
+        "Circle"
+      ],
+      [
+        "rounded",
+        "Rounded"
+      ],
+      [
+        "square",
+        "Square"
+      ],
+      [
+        "icon-only",
+        "Icon only"
+      ]
+    ],
+    "default": "circle"
+  },
+  {
+    "id": "fg-items",
+    "name": "items",
+    "label": "Features",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 1,
+      "max": 12,
+      "sorting_label_field": null,
+      "default": 3
+    },
+    "children": [
+      {
+        "id": "fg-item-icon",
+        "name": "icon",
+        "label": "Icon or Image",
+        "required": false,
+        "locked": false,
+        "responsive": true,
+        "resizable": true,
+        "show_loading": false,
+        "display_width": null,
+        "type": "image",
+        "default": {
+          "size_type": "auto",
+          "src": "",
+          "alt": "",
+          "loading": "lazy"
+        }
+      },
+      {
+        "id": "fg-item-title",
+        "name": "item_title",
+        "label": "Title",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "fg-item-body",
+        "name": "item_text",
+        "label": "Description",
+        "required": false,
+        "locked": false,
+        "display_width": null,
+        "type": "richtext",
+        "default": ""
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": [
+      {
+        "icon": {
+          "size_type": "auto",
+          "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/cloudtech/pexels-4808267-cybersecurity-shield-lock-protection.jpg",
+          "alt": "Enterprise Security",
+          "loading": "lazy"
+        },
+        "title": "Enterprise Security",
+        "body": "<p>Every VPS instance is isolated at the hypervisor level. Data encrypted in transit and at rest. DDoS protection and firewall rules included as standard. ISO 27001 certified infrastructure.</p>"
+      },
+      {
+        "icon": {
+          "size_type": "auto",
+          "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/cloudtech/pexels-35865187-server-uptime-reliability-network-infrastructure.jpg",
+          "alt": "99.99% Reliability",
+          "loading": "lazy"
+        },
+        "title": "99.99% Reliability",
+        "body": "<p>Redundant power, network and storage across every node. Automated failover and live migration keep your workloads running even during maintenance windows.</p>"
+      },
+      {
+        "icon": {
+          "size_type": "auto",
+          "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/cloudtech/pexels-4549831-scalability-growth-chart-technology-abstract.jpg",
+          "alt": "Instant Scalability",
+          "loading": "lazy"
+        },
+        "title": "Instant Scalability",
+        "body": "<p>Upgrade your VPS grade in minutes with zero downtime. Add storage, increase RAM, or migrate to a higher tier as your needs evolve — no re-provisioning required.</p>"
+      }
+    ]
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "lp-about-title",
+    "name": "module_title",
+    "label": "Headline",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Why clients keep coming back"
+  },
+  {
+    "id": "lp-about-text",
+    "name": "module_text",
+    "label": "Body Text",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "richtext",
+    "default": "<p>We’re not just a nail salon — we’re your go-to for self-care in London. With a welcoming atmosphere, a skilled team, and obsessive attention to detail, VividVarnish has become the trusted choice for women across the city.</p>"
+  },
+  {
+    "id": "lp-about-image",
+    "name": "module_image",
+    "label": "Image",
+    "required": false,
+    "locked": false,
+    "responsive": true,
+    "resizable": true,
+    "show_loading": false,
+    "display_width": null,
+    "type": "image",
+    "default": {
+      "size_type": "auto",
+      "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/vividvarnish/pexels-7755676-beauty-salon-interior-welcoming.jpg",
+      "alt": "Why clients keep coming back",
+      "loading": "lazy"
+    }
+  },
+  {
+    "id": "lp-about-cards",
+    "name": "cards",
+    "label": "Key Value Cards",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": null,
+      "max": null,
+      "sorting_label_field": null,
+      "default": null
+    },
+    "children": [
+      {
+        "id": "lp-about-card-title",
+        "name": "card_title",
+        "label": "Card Title",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text"
+      },
+      {
+        "id": "lp-about-card-text",
+        "name": "card_text",
+        "label": "Card Text",
+        "required": false,
+        "locked": false,
+        "display_width": null,
+        "type": "richtext"
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": []
+  }
+]

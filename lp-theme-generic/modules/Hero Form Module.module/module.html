@@ -1,0 +1,43 @@
+<div class="container-fluid lp-hero" {% if module.featured_image.src %}style="background-image: url('{{ module.featured_image.src|escape_url }}'); background-size: cover; background-position: center;"{% endif %}>
+  <div class="container">
+    <div class="row d-flex align-items-center">
+      <div class="col-md-5 col-sm-12">
+        <h1>{{ module.module_title }}</h1>
+        <h2>{{ module.module_subtitle }}</h2>
+      </div>
+      <div class="offset-md-1 col-md-6 col-sm-12 my-4" id="hs-form-wrapper">
+        {% form
+          form_to_use="{{ module.form_field.form_id }}"
+          response_response_type="{{ module.form_field.response_type }}"
+          response_message="{{ module.form_field.message }}"
+          response_redirect_id="{{ module.form_field.redirect_id }}"
+          response_redirect_url="{{ module.form_field.redirect_url }}"
+          gotowebinar_webinar_key="{{ module.form_field.gotowebinar_webinar_key }}"
+        %}
+      </div>
+    </div>
+  </div>
+  {% if module.has_icon_row %}
+  <div class="container icons">
+    <div class="row text-center">
+      <div class="col-md-8 offset-md-2">
+        <h3>{{ module.icon_row_title }}</h3>
+        {% if module.icon_repeater %}
+        <div class="row d-flex align-items-stretch justify-content-center mt-4">
+          {% for item in module.icon_repeater %}
+          <div class="col-md-3 col-sm-12 mb-4">
+            <div class="card text-center d-flex align-items-center h-100">
+              {% if item.icon.src %}
+                <img src="{{ item.icon.src|escape_url }}" alt="{{ item.icon.alt|escape_attr }}" style="max-width:60px;height:auto;">
+              {% endif %}
+              <h5>{{ item.icon_text }}</h5>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>

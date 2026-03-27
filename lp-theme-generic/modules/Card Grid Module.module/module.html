@@ -1,0 +1,38 @@
+<div class="container-fluid lp-card-grid">
+  <div class="container">
+    {% if module.section_title %}
+    <div class="row mb-5">
+      <div class="col-12 text-center">
+        <h2>{{ module.section_title }}</h2>
+      </div>
+    </div>
+    {% endif %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-{{ module.columns }} g-4">
+      {% for card in module.cards %}
+      <div class="col">
+        <div class="lp-card lp-card--bg-{{ module.card_background }} h-100">
+          {% if card.image.src %}
+          <div class="lp-card__image lp-card__image--{{ module.image_style }}">
+            <img
+              src="{{ card.image.src|escape_url }}"
+              alt="{{ card.image.alt|escape_attr }}"
+              loading="lazy">
+          </div>
+          {% endif %}
+          {% if card.title %}
+          <h3 class="lp-card__title">{{ card.title }}</h3>
+          {% endif %}
+          {% if card.body %}
+          <div class="lp-card__body">{{ card.body }}</div>
+          {% endif %}
+          {% if card.link_label and card.link_url.url.href %}
+          <a href="{{ card.link_url.url.href }}" class="lp-card__link" {% if card.link_url.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+            {{ card.link_label }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

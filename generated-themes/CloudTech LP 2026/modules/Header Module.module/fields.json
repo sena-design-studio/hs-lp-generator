@@ -1,0 +1,20 @@
+[
+  {
+    "id": "lp-header-logo",
+    "name": "logo",
+    "label": "Logo",
+    "required": false,
+    "locked": false,
+    "responsive": true,
+    "resizable": true,
+    "show_loading": false,
+    "display_width": null,
+    "type": "image",
+    "default": {
+      "size_type": "auto",
+      "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/cloudtech/logo.png",
+      "alt": "CloudTech",
+      "loading": "lazy"
+    }
+  }
+]

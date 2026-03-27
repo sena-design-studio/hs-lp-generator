@@ -1,0 +1,31 @@
+[
+  {
+    "id": "lp-footer-logo",
+    "name": "logo",
+    "label": "Logo",
+    "required": false,
+    "locked": false,
+    "responsive": true,
+    "resizable": true,
+    "show_loading": false,
+    "display_width": null,
+    "type": "image",
+    "default": {
+      "size_type": "auto",
+      "src": "",
+      "alt": "",
+      "loading": "lazy"
+    }
+  },
+  {
+    "id": "lp-footer-copyright",
+    "name": "copyright_text",
+    "label": "Copyright Notice",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "© 2026 Latigid. All rights reserved."
+  }
+]

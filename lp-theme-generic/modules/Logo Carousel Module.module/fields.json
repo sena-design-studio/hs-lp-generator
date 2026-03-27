@@ -1,0 +1,62 @@
+[
+  {
+    "id": "lc-title",
+    "name": "section_title",
+    "label": "Section Title (optional)",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "lc-logos",
+    "name": "logos",
+    "label": "Logos",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 2,
+      "max": 20,
+      "sorting_label_field": null,
+      "default": 5
+    },
+    "children": [
+      {
+        "id": "lc-logo-image",
+        "name": "image",
+        "label": "Logo Image",
+        "required": false,
+        "locked": false,
+        "responsive": true,
+        "resizable": true,
+        "show_loading": false,
+        "display_width": null,
+        "type": "image",
+        "default": {
+          "size_type": "auto",
+          "src": "",
+          "alt": null,
+          "loading": "lazy"
+        }
+      },
+      {
+        "id": "lc-logo-alt",
+        "name": "company_name",
+        "label": "Company Name",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": []
+  }
+]

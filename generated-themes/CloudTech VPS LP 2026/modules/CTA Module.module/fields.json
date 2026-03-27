@@ -1,0 +1,24 @@
+[
+  {
+    "id": "lp-cta-text",
+    "name": "cta_text",
+    "label": "CTA Headline",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Ready to scale without limits?"
+  },
+  {
+    "id": "lp-cta-button",
+    "name": "button_text",
+    "label": "Button Label",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Get started today"
+  }
+]
