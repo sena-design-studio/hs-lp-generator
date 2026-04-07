@@ -1,0 +1,20 @@
+<div class="lp-stats-strip lp-stats-strip--bg-{{ module.background }}{% if module.show_border %} lp-stats-strip--bordered{% endif %}">
+  <div class="container">
+    <div class="row g-0">
+      {% for stat in module.stats %}
+      <div class="col-6 col-sm-4 col-md">
+        <div class="lp-stats-strip__item">
+          {% if stat.icon_class %}
+          <i class="bi {{ stat.icon_class }} lp-stats-strip__icon"></i>
+          {% endif %}
+          <div class="lp-stats-strip__value">{{ stat.stat_value }}</div>
+          <div class="lp-stats-strip__label">{{ stat.stat_label }}</div>
+        </div>
+      </div>
+      {% if not loop.last %}
+      <div class="lp-stats-strip__divider d-none d-md-block col-auto"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,169 @@
+[
+  {
+    "id": "ic-title",
+    "name": "section_title",
+    "label": "Section Title",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "ic-intro",
+    "name": "section_intro",
+    "label": "Intro Text",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "richtext",
+    "default": ""
+  },
+  {
+    "id": "ic-columns",
+    "name": "columns",
+    "label": "Columns",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      ["2", "2 columns"],
+      ["3", "3 columns"],
+      ["4", "4 columns"]
+    ],
+    "default": "3"
+  },
+  {
+    "id": "ic-icon-style",
+    "name": "icon_style",
+    "label": "Icon style",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      ["plain", "Plain (no background)"],
+      ["circle-light", "Circle — light background"],
+      ["circle-accent", "Circle — accent colour"],
+      ["circle-primary", "Circle — primary colour"]
+    ],
+    "default": "circle-light"
+  },
+  {
+    "id": "ic-card-style",
+    "name": "card_style",
+    "label": "Card style",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      ["none", "No background"],
+      ["light", "Light background"],
+      ["bordered", "Bordered"],
+      ["shadow", "Shadow card"]
+    ],
+    "default": "none"
+  },
+  {
+    "id": "ic-align",
+    "name": "alignment",
+    "label": "Content alignment",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "choice",
+    "choices": [
+      ["left", "Left"],
+      ["center", "Center"]
+    ],
+    "default": "left"
+  },
+  {
+    "id": "ic-cards",
+    "name": "cards",
+    "label": "Cards",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 1,
+      "max": 12,
+      "sorting_label_field": null,
+      "default": 3
+    },
+    "children": [
+      {
+        "id": "ic-card-icon",
+        "name": "icon_class",
+        "label": "Bootstrap Icon class (e.g. bi-star, bi-globe, bi-people)",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": "bi-star"
+      },
+      {
+        "id": "ic-card-icon-colour",
+        "name": "icon_colour",
+        "label": "Icon colour override (hex, leave blank for default)",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "ic-card-title",
+        "name": "card_title",
+        "label": "Card Title",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "ic-card-body",
+        "name": "card_text",
+        "label": "Card Body",
+        "required": false,
+        "locked": false,
+        "display_width": null,
+        "type": "richtext",
+        "default": ""
+      },
+      {
+        "id": "ic-card-link-label",
+        "name": "link_label",
+        "label": "Link label (optional)",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      },
+      {
+        "id": "ic-card-link-url",
+        "name": "link_url",
+        "label": "Link URL (optional)",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": []
+  }
+]

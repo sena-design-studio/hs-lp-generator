@@ -1,0 +1,152 @@
+[
+  {
+    "id": "hero-bg-image",
+    "name": "background_image",
+    "label": "Background Image",
+    "required": false,
+    "locked": false,
+    "responsive": true,
+    "resizable": true,
+    "show_loading": false,
+    "display_width": null,
+    "type": "image",
+    "default": { "size_type": "auto", "src": "", "alt": "", "loading": "eager" }
+  },
+  {
+    "id": "hero-eyebrow",
+    "name": "eyebrow",
+    "label": "Eyebrow label (small text above headline)",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "hero-headline",
+    "name": "headline",
+    "label": "Headline",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "richtext",
+    "default": ""
+  },
+  {
+    "id": "hero-body",
+    "name": "hero_body",
+    "label": "Body Text",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "richtext",
+    "default": ""
+  },
+  {
+    "id": "hero-bullets",
+    "name": "bullets",
+    "label": "Bullet points (with checkmark icons)",
+    "required": false,
+    "locked": false,
+    "occurrence": {
+      "min": 0,
+      "max": 6,
+      "sorting_label_field": null,
+      "default": 3
+    },
+    "children": [
+      {
+        "id": "hero-bullet-text",
+        "name": "bullet_text",
+        "label": "Bullet text",
+        "required": false,
+        "locked": false,
+        "allow_new_line": false,
+        "display_width": null,
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "tab": "CONTENT",
+    "expanded": false,
+    "display_width": null,
+    "type": "group",
+    "default": []
+  },
+  {
+    "id": "hero-cta1-label",
+    "name": "cta_primary_label",
+    "label": "Primary CTA Label",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Apply Now"
+  },
+  {
+    "id": "hero-cta1-url",
+    "name": "cta_primary_url",
+    "label": "Primary CTA URL",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "text",
+    "default": "#"
+  },
+  {
+    "id": "hero-cta2-label",
+    "name": "cta_secondary_label",
+    "label": "Secondary CTA Label",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": "Download Brochure"
+  },
+  {
+    "id": "hero-cta2-url",
+    "name": "cta_secondary_url",
+    "label": "Secondary CTA URL",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "text",
+    "default": "#"
+  },
+  {
+    "id": "hero-form-id",
+    "name": "form_id",
+    "label": "HubSpot Form GUID",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "hero-form-title",
+    "name": "form_title",
+    "label": "Form box title",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "hero-form-subtitle",
+    "name": "form_subtitle",
+    "label": "Form box subtitle",
+    "required": false,
+    "locked": false,
+    "allow_new_line": false,
+    "display_width": null,
+    "type": "text",
+    "default": ""
+  }
+]

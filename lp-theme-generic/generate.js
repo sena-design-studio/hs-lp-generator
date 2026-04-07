@@ -640,6 +640,7 @@ ${textImageRows}
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="${googleFontsUrl}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
     <link href="{{ get_asset_url('/${themeLabel}/assets/css/style.css') }}" rel="stylesheet">
     {{ standard_header_includes }}
     <script>

@@ -15,6 +15,19 @@ const server = new McpServer({
   version: "0.1.0",
 });
 
+server.tool(
+  "write_file",
+  "Write a file directly to the local filesystem",
+  {
+    file_path: z.string().describe("Absolute path to write the file to"),
+    content:   z.string().describe("File content to write"),
+  },
+  async ({ file_path, content }) => {
+    fs.mkdirSync(path.dirname(file_path), { recursive: true });
+    fs.writeFileSync(file_path, content, "utf8");
+    return { content: [{ type: "text", text: JSON.stringify({ status: "ok", path: file_path }) }] };
+  }
+);
 // ─── TOOL: list_themes ───────────────────────────────────────────────────────
 server.tool(
   "list_themes",

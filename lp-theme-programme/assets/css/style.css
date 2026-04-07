@@ -1,0 +1,28 @@
+/* ── Brand tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --primary:       #0A2342;
+  --secondary:     #EEF3F9;
+  --accent:        #1E6FBF;
+  --border-radius: 8px;
+  --font-heading:  'Inter', sans-serif;
+  --font-body:     'Inter', sans-serif;
+}
+
+/* ── Base reset ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--primary);
+}
+
+img { max-width: 100%; height: auto; }
+
+a { color: var(--accent); }

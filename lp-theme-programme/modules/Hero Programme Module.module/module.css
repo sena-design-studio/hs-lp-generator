@@ -1,0 +1,258 @@
+/* ── Hero Programme ───────────────────────────────────────────────────────── */
+
+.lp-hero-programme {
+  position: relative;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  background-color: var(--primary);
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  padding: 100px 0 60px; /* top padding accounts for fixed navbar */
+}
+
+/* Dark+blue overlay for contrast over background image */
+.lp-hero-programme__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(10, 35, 66, 0.82) 0%,
+    rgba(10, 35, 66, 0.65) 50%,
+    rgba(10, 35, 66, 0.40) 100%
+  );
+  z-index: 0;
+}
+
+.lp-hero-programme__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Eyebrow ── */
+.lp-hero-programme__eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding: 5px 12px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+
+/* ── Headline ── */
+.lp-hero-programme__headline {
+  margin-bottom: 20px;
+}
+
+.lp-hero-programme__headline h1,
+.lp-hero-programme__headline h2,
+.lp-hero-programme__headline p {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1.15;
+  color: #fff;
+  margin: 0;
+}
+
+/* Wrap words in <em> or <span class="highlight"> for green accent */
+.lp-hero-programme__headline em,
+.lp-hero-programme__headline .highlight {
+  font-style: normal;
+  color: var(--accent);
+}
+
+/* ── Body ── */
+.lp-hero-programme__body {
+  margin-bottom: 24px;
+}
+
+.lp-hero-programme__body p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 0;
+}
+
+/* ── Bullets — round circle icons, below CTAs ── */
+.lp-hero-programme__bullets {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lp-hero-programme__bullets li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.lp-hero-programme__bullets li::before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── CTAs ── */
+.lp-hero-programme__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.lp-hero-programme__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 150ms ease;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lp-hero-programme__cta--solid {
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
+}
+
+.lp-hero-programme__cta--solid:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+  border-color: color-mix(in srgb, var(--accent) 85%, #000);
+  color: #fff;
+}
+
+.lp-hero-programme__cta--outline {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.lp-hero-programme__cta--outline:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* ── Form box ── */
+.lp-hero-programme__form-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+}
+
+.lp-hero-programme__form-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.lp-hero-programme__form-subtitle {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.lp-hero-programme__form-body .hs-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.lp-hero-programme__form-body .hs-form input,
+.lp-hero-programme__form-body .hs-form select,
+.lp-hero-programme__form-body .hs-form textarea {
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  width: 100%;
+  transition: border-color 150ms;
+}
+
+.lp-hero-programme__form-body .hs-form input:focus,
+.lp-hero-programme__form-body .hs-form select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.lp-hero-programme__form-body .hs-form .hs-button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  width: 100%;
+  cursor: pointer;
+  transition: background 150ms;
+  margin-top: 8px;
+}
+
+.lp-hero-programme__form-body .hs-form .hs-button:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+}
+
+.lp-hero-programme__form-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 14px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.lp-hero-programme__form-disclaimer .bi {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 991px) {
+  .lp-hero-programme {
+    min-height: auto;
+    padding: 100px 0 48px;
+  }
+
+  .lp-hero-programme__form-box {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 575px) {
+  .lp-hero-programme__ctas {
+    flex-direction: column;
+  }
+
+  .lp-hero-programme__cta {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,60 @@
+<div class="lp-faculty">
+  <div class="container">
+
+    {% if module.section_title or module.section_intro %}
+    <div class="row mb-5">
+      <div class="col-12">
+        {% if module.section_title %}
+        <h2 class="lp-faculty__title">{{ module.section_title }}</h2>
+        {% endif %}
+        {% if module.section_intro %}
+        <p class="lp-faculty__intro">{{ module.section_intro }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-4">
+      {% for member in module.members %}
+      <div class="col">
+        <div class="lp-faculty__card">
+
+          <!-- Avatar: photo or initials -->
+          <div class="lp-faculty__avatar" {% if member.avatar_colour %}style="background: {{ member.avatar_colour }}"{% endif %}>
+            {% if member.photo.src %}
+              <img
+                src="{{ member.photo.src|escape_url }}"
+                alt="{{ member.member_name|escape_attr }}"
+                loading="lazy">
+            {% else %}
+              <span class="lp-faculty__initials">{{ member.initials }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Info -->
+          <div class="lp-faculty__info">
+            {% if member.member_name %}
+            <p class="lp-faculty__name">{{ member.member_name }}</p>
+            {% endif %}
+            {% if member.member_title %}
+            <p class="lp-faculty__role">{{ member.member_title }}</p>
+            {% endif %}
+            {% if member.bio %}
+            <p class="lp-faculty__bio">{{ member.bio }}</p>
+            {% endif %}
+          </div>
+
+          <!-- LinkedIn -->
+          {% if member.linkedin_url %}
+          <a href="{{ member.linkedin_url|escape_attr }}" class="lp-faculty__linkedin" target="_blank" rel="noopener" aria-label="LinkedIn profile of {{ member.member_name|escape_attr }}">
+            <i class="bi bi-linkedin"></i> LinkedIn
+          </a>
+          {% endif %}
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>

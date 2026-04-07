@@ -1,47 +1,47 @@
 [
   {
-    "id": "st-title",
-    "name": "section_title",
-    "label": "Section Title",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "st-background",
+    "id": "ss-background",
     "name": "background",
-    "label": "Background",
+    "label": "Background style",
     "required": false,
     "locked": false,
     "display_width": null,
     "type": "choice",
     "choices": [
-      ["none", "None"],
-      ["light", "Light"],
-      ["primary", "Primary colour"]
+      ["white", "White"],
+      ["light", "Light grey"],
+      ["primary", "Primary colour"],
+      ["accent", "Accent colour"]
     ],
-    "default": "primary"
+    "default": "white"
   },
   {
-    "id": "st-stats",
+    "id": "ss-border",
+    "name": "show_border",
+    "label": "Show top/bottom border",
+    "required": false,
+    "locked": false,
+    "display_width": null,
+    "type": "boolean",
+    "default": true
+  },
+  {
+    "id": "ss-stats",
     "name": "stats",
     "label": "Stats",
     "required": false,
     "locked": false,
     "occurrence": {
       "min": 2,
-      "max": 4,
+      "max": 6,
       "sorting_label_field": null,
-      "default": 3
+      "default": 4
     },
     "children": [
       {
-        "id": "st-stat-number",
-        "name": "number",
-        "label": "Number / Value",
+        "id": "ss-stat-value",
+        "name": "stat_value",
+        "label": "Value (e.g. 24, €12K, 5+)",
         "required": false,
         "locked": false,
         "allow_new_line": false,
@@ -50,8 +50,8 @@
         "default": ""
       },
       {
-        "id": "st-stat-label",
-        "name": "label",
+        "id": "ss-stat-label",
+        "name": "stat_label",
         "label": "Label",
         "required": false,
         "locked": false,
@@ -61,9 +61,9 @@
         "default": ""
       },
       {
-        "id": "st-stat-suffix",
-        "name": "suffix",
-        "label": "Suffix (e.g. +, %, x)",
+        "id": "ss-stat-icon",
+        "name": "icon_class",
+        "label": "Bootstrap Icon class (e.g. bi-calendar, bi-globe)",
         "required": false,
         "locked": false,
         "allow_new_line": false,
