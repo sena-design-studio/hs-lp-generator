@@ -1,0 +1,53 @@
+<div class="lp-profile-cards">
+  <div class="container">
+
+    {% if module.section_title or module.section_intro %}
+    <div class="row mb-5">
+      <div class="col-12">
+        {% if module.section_title %}
+        <h2 class="lp-profile-cards__title">{{ module.section_title }}</h2>
+        {% endif %}
+        {% if module.section_intro %}
+        <p class="lp-profile-cards__intro">{{ module.section_intro }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      {% for card in module.cards %}
+      <div class="col">
+        <div class="lp-profile-card h-100">
+
+          <!-- Coloured header -->
+          <div class="lp-profile-card__header" style="background: {{ card.bg_colour|default('#0A2342', true) }}">
+            {% if card.card_title %}
+            <h3 class="lp-profile-card__title">{{ card.card_title }}</h3>
+            {% endif %}
+            {% if card.card_tags %}
+            <p class="lp-profile-card__header-tags">{{ card.card_tags }}</p>
+            {% endif %}
+          </div>
+
+          <!-- White body -->
+          <div class="lp-profile-card__body">
+            {% if card.card_description %}
+            <p class="lp-profile-card__desc">{{ card.card_description }}</p>
+            {% endif %}
+            {% if card.card_pills %}
+            <div class="lp-profile-card__pills">
+              {% set pills = card.card_pills.split(",") %}
+              {% for pill in pills %}
+              <span class="lp-profile-card__pill">{{ pill|trim }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,23 @@
+[
+  { "id": "fp-logo", "name": "logo", "label": "Logo", "required": false, "locked": false, "responsive": true, "resizable": true, "show_loading": false, "display_width": null, "type": "image", "default": { "size_type": "auto", "src": "", "alt": "GREAT MBA", "loading": "lazy" } },
+  { "id": "fp-tagline", "name": "tagline", "label": "Tagline", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Europe's only executive MBA on Critical Raw Materials. Hybrid · Part-time · EIT Funded." },
+  {
+    "id": "fp-link-groups", "name": "link_groups", "label": "Link groups", "required": false, "locked": false,
+    "occurrence": { "min": 0, "max": 4, "sorting_label_field": null, "default": 3 },
+    "children": [
+      { "id": "fp-group-label", "name": "group_label", "label": "Group label", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+      { "id": "fp-group-links", "name": "links", "label": "Links", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" }
+    ],
+    "tab": "CONTENT", "expanded": false, "display_width": null, "type": "group",
+    "default": [
+      { "group_label": "Programme", "links": "About:/about, Curriculum:/curriculum, Faculty:/faculty, Structure:/structure" },
+      { "group_label": "Apply", "links": "How to Apply:/apply, Admission Requirements:/requirements, Pricing:/pricing, Download Brochure:#" },
+      { "group_label": "Partners", "links": "NOVA FCT:https://www.fct.unl.pt, UPM Madrid:https://www.upm.es, EIT Raw Materials:https://eitrawmaterials.eu, Gómez Pardo:#" }
+    ]
+  },
+  { "id": "fp-social-linkedin", "name": "social_linkedin", "label": "LinkedIn URL", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "https://linkedin.com" },
+  { "id": "fp-social-twitter", "name": "social_twitter", "label": "X / Twitter URL", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+  { "id": "fp-social-instagram", "name": "social_instagram", "label": "Instagram URL", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+  { "id": "fp-copyright", "name": "copyright", "label": "Copyright", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "© 2026 GREAT MBA · EIT Raw Materials. All rights reserved." },
+  { "id": "fp-legal-links", "name": "legal_links", "label": "Legal links", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Privacy Policy:/privacy, Terms of Use:/terms, Cookie Policy:/cookies" }
+]

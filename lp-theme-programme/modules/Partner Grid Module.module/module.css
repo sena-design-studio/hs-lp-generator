@@ -1,0 +1,113 @@
+/* ── Partner Grid ─────────────────────────────────────────────────────────── */
+
+.lp-partner-grid {
+  padding: 60px 0;
+  background: #fff;
+}
+
+/* Centered header */
+.lp-partner-grid__title {
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.lp-partner-grid__intro {
+  font-size: 15px;
+  color: #666;
+  margin-bottom: 0;
+}
+
+/* ── Column label ── */
+.lp-partner-grid__col-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999;
+  margin-bottom: 20px;
+  font-family: monospace;
+}
+
+/* ── Logo grid ── */
+.lp-partner-grid__logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Each logo item — bordered pill/card */
+.lp-partner-grid__logo-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1.5px solid #e0e8f0;
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  min-width: 120px;
+  min-height: 56px;
+}
+
+a.lp-partner-grid__logo-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.lp-partner-grid__logo-item img {
+  max-height: 36px;
+  max-width: 140px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: grayscale(30%);
+  opacity: 0.85;
+  transition: filter 150ms ease, opacity 150ms ease;
+}
+
+a.lp-partner-grid__logo-item:hover img {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Fallback text when no logo image */
+.lp-partner-grid__logo-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ── Footer note — funding badge ── */
+.lp-partner-grid__footer-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 1.5px solid var(--accent);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--accent) 6%, #fff);
+}
+
+.lp-partner-grid__footer-note .bi {
+  color: var(--accent);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .lp-partner-grid__logos {
+    gap: 10px;
+  }
+
+  .lp-partner-grid__logo-item {
+    min-width: 100px;
+    padding: 10px 14px;
+  }
+}

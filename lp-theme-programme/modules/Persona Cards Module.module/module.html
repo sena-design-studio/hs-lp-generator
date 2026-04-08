@@ -1,0 +1,48 @@
+<div class="lp-persona-cards">
+  <div class="container">
+
+    {% if module.section_title or module.section_intro %}
+    <div class="row mb-5">
+      <div class="col-12">
+        {% if module.section_title %}
+        <h2 class="lp-persona-cards__title">{{ module.section_title }}</h2>
+        {% endif %}
+        {% if module.section_intro %}
+        <p class="lp-persona-cards__intro">{{ module.section_intro }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4">
+      {% for card in module.cards %}
+      <div class="col">
+        <div class="lp-persona-card h-100">
+          {% if card.profile_image.src %}
+          <div class="lp-persona-card__image">
+            <img src="{{ card.profile_image.src|escape_url }}" alt="{{ card.card_title|escape_attr }}" loading="lazy">
+          </div>
+          {% endif %}
+          <div class="lp-persona-card__info">
+            {% if card.card_title %}
+            <p class="lp-persona-card__title">{{ card.card_title }}</p>
+            {% endif %}
+            {% if card.card_subtitle %}
+            <p class="lp-persona-card__subtitle">{{ card.card_subtitle }}</p>
+            {% endif %}
+            {% if card.card_tags %}
+            <div class="lp-persona-card__tags">
+              {% set tags = card.card_tags.split(",") %}
+              {% for tag in tags %}
+              <span class="lp-persona-card__tag">{{ tag|trim }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>

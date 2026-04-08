@@ -1,152 +1,24 @@
 [
+  { "id": "hero-bg-image", "name": "background_image", "label": "Background Image", "required": false, "locked": false, "responsive": true, "resizable": true, "show_loading": false, "display_width": null, "type": "image", "default": { "size_type": "auto", "src": "https://2662575.fs1.hubspotusercontent-na1.net/hubfs/2662575/programme-lp/pexels-32507739-mining-raw-materials-industry-executive-leadership.jpg", "alt": "Raw Materials", "loading": "eager" } },
+  { "id": "hero-eyebrow", "name": "eyebrow", "label": "Eyebrow", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Funded by EIT Raw Materials · Project 24635" },
+  { "id": "hero-headline", "name": "headline", "label": "Headline", "required": false, "locked": false, "display_width": null, "type": "richtext", "default": "<h1>Europe's Only MBA on <em>Critical Raw Materials</em></h1>" },
+  { "id": "hero-body", "name": "hero_body", "label": "Body Text", "required": false, "locked": false, "display_width": null, "type": "richtext", "default": "<p>A 2-year part-time executive MBA for industry leaders managing the raw materials value chain. Hybrid format — no career break needed.</p>" },
   {
-    "id": "hero-bg-image",
-    "name": "background_image",
-    "label": "Background Image",
-    "required": false,
-    "locked": false,
-    "responsive": true,
-    "resizable": true,
-    "show_loading": false,
-    "display_width": null,
-    "type": "image",
-    "default": { "size_type": "auto", "src": "", "alt": "", "loading": "eager" }
+    "id": "hero-bullets", "name": "bullets", "label": "Bullets", "required": false, "locked": false,
+    "occurrence": { "min": 0, "max": 6, "sorting_label_field": null, "default": 3 },
+    "children": [{ "id": "hero-bullet-text", "name": "bullet_text", "label": "Bullet text", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" }],
+    "tab": "CONTENT", "expanded": false, "display_width": null, "type": "group",
+    "default": [
+      { "bullet_text": "Launch price: €12,000" },
+      { "bullet_text": "NOVA FCT · UPM" },
+      { "bullet_text": "Hybrid · Part-time" }
+    ]
   },
-  {
-    "id": "hero-eyebrow",
-    "name": "eyebrow",
-    "label": "Eyebrow label (small text above headline)",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "hero-headline",
-    "name": "headline",
-    "label": "Headline",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "richtext",
-    "default": ""
-  },
-  {
-    "id": "hero-body",
-    "name": "hero_body",
-    "label": "Body Text",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "richtext",
-    "default": ""
-  },
-  {
-    "id": "hero-bullets",
-    "name": "bullets",
-    "label": "Bullet points (with checkmark icons)",
-    "required": false,
-    "locked": false,
-    "occurrence": {
-      "min": 0,
-      "max": 6,
-      "sorting_label_field": null,
-      "default": 3
-    },
-    "children": [
-      {
-        "id": "hero-bullet-text",
-        "name": "bullet_text",
-        "label": "Bullet text",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      }
-    ],
-    "tab": "CONTENT",
-    "expanded": false,
-    "display_width": null,
-    "type": "group",
-    "default": []
-  },
-  {
-    "id": "hero-cta1-label",
-    "name": "cta_primary_label",
-    "label": "Primary CTA Label",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": "Apply Now"
-  },
-  {
-    "id": "hero-cta1-url",
-    "name": "cta_primary_url",
-    "label": "Primary CTA URL",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "text",
-    "default": "#"
-  },
-  {
-    "id": "hero-cta2-label",
-    "name": "cta_secondary_label",
-    "label": "Secondary CTA Label",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": "Download Brochure"
-  },
-  {
-    "id": "hero-cta2-url",
-    "name": "cta_secondary_url",
-    "label": "Secondary CTA URL",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "text",
-    "default": "#"
-  },
-  {
-    "id": "hero-form-id",
-    "name": "form_id",
-    "label": "HubSpot Form GUID",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "hero-form-title",
-    "name": "form_title",
-    "label": "Form box title",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "hero-form-subtitle",
-    "name": "form_subtitle",
-    "label": "Form box subtitle",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  }
+  { "id": "hero-cta1-label", "name": "cta_primary_label", "label": "Primary CTA", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Apply Now" },
+  { "id": "hero-cta1-url", "name": "cta_primary_url", "label": "Primary CTA URL", "required": false, "locked": false, "display_width": null, "type": "text", "default": "#" },
+  { "id": "hero-cta2-label", "name": "cta_secondary_label", "label": "Secondary CTA", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Download Brochure" },
+  { "id": "hero-cta2-url", "name": "cta_secondary_url", "label": "Secondary CTA URL", "required": false, "locked": false, "display_width": null, "type": "text", "default": "#" },
+  { "id": "hero-form-id", "name": "form_id", "label": "HubSpot Form GUID", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "116d7b92-6f87-44fe-ae4c-0637111986cc" },
+  { "id": "hero-form-title", "name": "form_title", "label": "Form box title", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Download the GREAT MBA Brochure" },
+  { "id": "hero-form-subtitle", "name": "form_subtitle", "label": "Form box subtitle", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Fill in the form and receive the official programme brochure — 60+ pages with full curriculum and admission requirements." }
 ]

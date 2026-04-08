@@ -1,0 +1,77 @@
+<div class="lp-pricing lp-pricing--bg-{{ module.background }}">
+  <div class="container">
+
+    {% if module.section_title or module.section_intro %}
+    <div class="row mb-5">
+      <div class="col-12">
+        {% if module.section_title %}
+        <h2 class="lp-pricing__title">{{ module.section_title }}</h2>
+        {% endif %}
+        {% if module.section_intro %}
+        <p class="lp-pricing__intro">{{ module.section_intro }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 align-items-stretch">
+
+      <!-- Pricing tiers -->
+      <div class="col-12 col-lg-7">
+        <div class="row g-4 h-100">
+          {% for tier in module.tiers %}
+          <div class="col-12 col-sm-6">
+            <div class="lp-pricing__tier {% if tier.is_featured %}lp-pricing__tier--featured{% endif %} h-100">
+
+              {% if tier.badge %}
+              <span class="lp-pricing__badge">{{ tier.badge }}</span>
+              {% endif %}
+
+              {% if tier.tier_label %}
+              <p class="lp-pricing__tier-label">{{ tier.tier_label }}</p>
+              {% endif %}
+
+              {% if tier.tier_price %}
+              <div class="lp-pricing__price">
+                {{ tier.tier_price }}
+                {% if tier.tier_period %}
+                <span class="lp-pricing__period">{{ tier.tier_period }}</span>
+                {% endif %}
+              </div>
+              {% endif %}
+
+              {% if tier.tier_description %}
+              <p class="lp-pricing__tier-desc">{{ tier.tier_description }}</p>
+              {% endif %}
+
+              {% if tier.tier_items %}
+              <div class="lp-pricing__items">{{ tier.tier_items }}</div>
+              {% endif %}
+
+              {% if tier.cta_label %}
+              <a href="{{ tier.cta_url|escape_attr }}" class="lp-pricing__cta {% if tier.is_featured %}lp-pricing__cta--solid{% else %}lp-pricing__cta--outline{% endif %}">
+                {{ tier.cta_label }}
+              </a>
+              {% endif %}
+
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Requirements -->
+      {% if module.requirements %}
+      <div class="col-12 col-lg-5">
+        <div class="lp-pricing__requirements h-100">
+          {% if module.requirements_title %}
+          <h3 class="lp-pricing__req-title">{{ module.requirements_title }}</h3>
+          {% endif %}
+          <div class="lp-pricing__req-list">{{ module.requirements }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>

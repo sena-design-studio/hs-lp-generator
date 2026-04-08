@@ -1,169 +1,26 @@
 [
+  { "id": "ic-title", "name": "section_title", "label": "Section Title", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "About the Programme" },
+  { "id": "ic-intro", "name": "section_intro", "label": "Intro Text", "required": false, "locked": false, "display_width": null, "type": "richtext", "default": "<p>Develop future leaders across the raw materials value chain — integrating business management, sustainability and industrial innovation.</p>" },
+  { "id": "ic-columns", "name": "columns", "label": "Columns", "required": false, "locked": false, "display_width": null, "type": "choice", "choices": [["2","2 columns"],["3","3 columns"],["4","4 columns"]], "default": "3" },
+  { "id": "ic-icon-style", "name": "icon_style", "label": "Icon style", "required": false, "locked": false, "display_width": null, "type": "choice", "choices": [["plain","Plain"],["circle-light","Circle — light"],["circle-accent","Circle — accent"],["circle-primary","Circle — primary"]], "default": "circle-light" },
+  { "id": "ic-card-style", "name": "card_style", "label": "Card style", "required": false, "locked": false, "display_width": null, "type": "choice", "choices": [["none","None"],["light","Light"],["bordered","Bordered"],["shadow","Shadow"]], "default": "light" },
+  { "id": "ic-align", "name": "alignment", "label": "Alignment", "required": false, "locked": false, "display_width": null, "type": "choice", "choices": [["left","Left"],["center","Center"]], "default": "left" },
   {
-    "id": "ic-title",
-    "name": "section_title",
-    "label": "Section Title",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "ic-intro",
-    "name": "section_intro",
-    "label": "Intro Text",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "richtext",
-    "default": ""
-  },
-  {
-    "id": "ic-columns",
-    "name": "columns",
-    "label": "Columns",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "choice",
-    "choices": [
-      ["2", "2 columns"],
-      ["3", "3 columns"],
-      ["4", "4 columns"]
-    ],
-    "default": "3"
-  },
-  {
-    "id": "ic-icon-style",
-    "name": "icon_style",
-    "label": "Icon style",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "choice",
-    "choices": [
-      ["plain", "Plain (no background)"],
-      ["circle-light", "Circle — light background"],
-      ["circle-accent", "Circle — accent colour"],
-      ["circle-primary", "Circle — primary colour"]
-    ],
-    "default": "circle-light"
-  },
-  {
-    "id": "ic-card-style",
-    "name": "card_style",
-    "label": "Card style",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "choice",
-    "choices": [
-      ["none", "No background"],
-      ["light", "Light background"],
-      ["bordered", "Bordered"],
-      ["shadow", "Shadow card"]
-    ],
-    "default": "none"
-  },
-  {
-    "id": "ic-align",
-    "name": "alignment",
-    "label": "Content alignment",
-    "required": false,
-    "locked": false,
-    "display_width": null,
-    "type": "choice",
-    "choices": [
-      ["left", "Left"],
-      ["center", "Center"]
-    ],
-    "default": "left"
-  },
-  {
-    "id": "ic-cards",
-    "name": "cards",
-    "label": "Cards",
-    "required": false,
-    "locked": false,
-    "occurrence": {
-      "min": 1,
-      "max": 12,
-      "sorting_label_field": null,
-      "default": 3
-    },
+    "id": "ic-cards", "name": "cards", "label": "Cards", "required": false, "locked": false,
+    "occurrence": { "min": 1, "max": 12, "sorting_label_field": null, "default": 3 },
     "children": [
-      {
-        "id": "ic-card-icon",
-        "name": "icon_class",
-        "label": "Bootstrap Icon class (e.g. bi-star, bi-globe, bi-people)",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": "bi-star"
-      },
-      {
-        "id": "ic-card-icon-colour",
-        "name": "icon_colour",
-        "label": "Icon colour override (hex, leave blank for default)",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      },
-      {
-        "id": "ic-card-title",
-        "name": "card_title",
-        "label": "Card Title",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      },
-      {
-        "id": "ic-card-body",
-        "name": "card_text",
-        "label": "Card Body",
-        "required": false,
-        "locked": false,
-        "display_width": null,
-        "type": "richtext",
-        "default": ""
-      },
-      {
-        "id": "ic-card-link-label",
-        "name": "link_label",
-        "label": "Link label (optional)",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      },
-      {
-        "id": "ic-card-link-url",
-        "name": "link_url",
-        "label": "Link URL (optional)",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      }
+      { "id": "ic-card-icon", "name": "icon_class", "label": "Bootstrap Icon class", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "bi-star" },
+      { "id": "ic-card-icon-colour", "name": "icon_colour", "label": "Icon colour override", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+      { "id": "ic-card-title", "name": "card_title", "label": "Card Title", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+      { "id": "ic-card-body", "name": "card_text", "label": "Card Body", "required": false, "locked": false, "display_width": null, "type": "richtext", "default": "" },
+      { "id": "ic-card-link-label", "name": "link_label", "label": "Link label", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+      { "id": "ic-card-link-url", "name": "link_url", "label": "Link URL", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" }
     ],
-    "tab": "CONTENT",
-    "expanded": false,
-    "display_width": null,
-    "type": "group",
-    "default": []
+    "tab": "CONTENT", "expanded": false, "display_width": null, "type": "group",
+    "default": [
+      { "icon_class": "bi-bullseye", "icon_colour": "", "card_title": "Programme Objective", "card_text": "<p>Build strategic leadership capabilities for executives managing the raw materials and critical minerals value chain across Europe.</p>", "link_label": "", "link_url": "" },
+      { "icon_class": "bi-calendar-range", "icon_colour": "", "card_title": "Duration & Format", "card_text": "<p>24 months part-time. Hybrid delivery — 4 in-person immersions per year, combined with live online sessions and self-paced learning.</p>", "link_label": "", "link_url": "" },
+      { "icon_class": "bi-trophy", "icon_colour": "", "card_title": "Key Benefits", "card_text": "<p>Dual certification from NOVA FCT and UPM. Access to EIT Raw Materials' global network of 300+ partners across industry and academia.</p>", "link_label": "", "link_url": "" }
+    ]
   }
 ]

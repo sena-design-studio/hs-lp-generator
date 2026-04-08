@@ -1,4 +1,4 @@
-<div class="lp-curriculum" id="lp-curriculum-{{ module.instance_id }}">
+<div class="lp-curriculum">
   <div class="container">
 
     {% if module.section_title or module.section_intro %}
@@ -14,88 +14,71 @@
     </div>
     {% endif %}
 
-    {% if module.tabs %}
+    {% if module.columns %}
+    <div class="lp-curriculum__grid">
+      {% for col in module.columns %}
+      <div class="lp-curriculum__col">
 
-    <!-- Tab buttons -->
-    <div class="lp-curriculum__tabs" role="tablist">
-      {% for tab in module.tabs %}
-      <button
-        class="lp-curriculum__tab {% if loop.first %}lp-curriculum__tab--active{% endif %}"
-        role="tab"
-        aria-selected="{% if loop.first %}true{% else %}false{% endif %}"
-        aria-controls="cur-panel-{{ module.instance_id }}-{{ loop.index }}"
-        data-cur-tab="{{ module.instance_id }}-{{ loop.index }}">
-        {{ tab.tab_label }}
-      </button>
-      {% endfor %}
-    </div>
-
-    <!-- Tab panels -->
-    <div class="lp-curriculum__panels">
-      {% for tab in module.tabs %}
-      <div
-        class="lp-curriculum__panel {% if loop.first %}lp-curriculum__panel--active{% endif %}"
-        id="cur-panel-{{ module.instance_id }}-{{ loop.index }}"
-        role="tabpanel"
-        aria-hidden="{% if loop.first %}false{% else %}true{% endif %}">
-
-        {% if tab.tab_subtitle %}
-        <p class="lp-curriculum__panel-subtitle">{{ tab.tab_subtitle }}</p>
-        {% endif %}
-
-        <div class="lp-curriculum__courses">
-          {{ tab.courses }}
+        <!-- Column header -->
+        <div class="lp-curriculum__col-header">
+          {% if col.col_label %}
+          <h3 class="lp-curriculum__col-label">{{ col.col_label }}</h3>
+          {% endif %}
+          {% if col.col_subtitle %}
+          <p class="lp-curriculum__col-subtitle">{{ col.col_subtitle }}</p>
+          {% endif %}
         </div>
+
+        <!-- Course rows -->
+        {% if col.rows %}
+        <div class="lp-curriculum__rows">
+          {% for row in col.rows %}
+          <div class="lp-curriculum__row">
+            {% if row.row_index %}
+            <div class="lp-curriculum__row-index">{{ row.row_index }}</div>
+            {% endif %}
+            <div class="lp-curriculum__row-content">
+              {% if row.row_title %}
+              <p class="lp-curriculum__row-title">{{ row.row_title }}</p>
+              {% endif %}
+              {% if row.row_description %}
+              <p class="lp-curriculum__row-desc">{{ row.row_description }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
 
       </div>
       {% endfor %}
     </div>
-
-    {% endif %}
-
-    {% if module.cta_label %}
-    <div class="lp-curriculum__cta-wrap">
-      <p class="lp-curriculum__cta-text">Meet the full module detail?</p>
-      <a href="{{ module.cta_url|escape_attr }}" class="lp-curriculum__cta">
-        {{ module.cta_label }}
-        <i class="bi bi-arrow-right"></i>
-      </a>
-    </div>
     {% endif %}
 
   </div>
+
+  <!-- CTA bar -->
+  {% if module.cta_label %}
+  <div class="lp-curriculum__cta-bar">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-12 col-md">
+          {% if module.cta_eyebrow %}
+          <p class="lp-curriculum__cta-eyebrow">{{ module.cta_eyebrow }}</p>
+          {% endif %}
+          {% if module.cta_subtitle %}
+          <p class="lp-curriculum__cta-subtitle">{{ module.cta_subtitle }}</p>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-auto mt-3 mt-md-0">
+          <a href="{{ module.cta_url|escape_attr }}" class="lp-curriculum__cta">
+            {{ module.cta_label }}
+            <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
-
-<script>
-(function() {
-  var id = '{{ module.instance_id }}';
-  var container = document.getElementById('lp-curriculum-' + id);
-  if (!container) return;
-
-  var tabs   = container.querySelectorAll('.lp-curriculum__tab');
-  var panels = container.querySelectorAll('.lp-curriculum__panel');
-
-  tabs.forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      var target = tab.getAttribute('data-cur-tab');
-
-      tabs.forEach(function(t) {
-        t.classList.remove('lp-curriculum__tab--active');
-        t.setAttribute('aria-selected', 'false');
-      });
-      panels.forEach(function(p) {
-        p.classList.remove('lp-curriculum__panel--active');
-        p.setAttribute('aria-hidden', 'true');
-      });
-
-      tab.classList.add('lp-curriculum__tab--active');
-      tab.setAttribute('aria-selected', 'true');
-      var panel = container.querySelector('#cur-panel-' + target);
-      if (panel) {
-        panel.classList.add('lp-curriculum__panel--active');
-        panel.setAttribute('aria-hidden', 'false');
-      }
-    });
-  });
-})();
-</script>

@@ -1,0 +1,49 @@
+<div class="lp-cta-banner" id="lp-cta-banner"
+  {% if module.background_image.src %}style="background-image: url('{{ module.background_image.src|escape_url }}')"{% endif %}>
+
+  <!-- Overlay -->
+  <div class="lp-cta-banner__overlay" style="background: {{ module.overlay_colour|default('#0A2342', true) }}; opacity: {{ (module.overlay_opacity|default(70)) / 100 }};"></div>
+
+  <!-- Content -->
+  <div class="container lp-cta-banner__content">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-8 text-center">
+
+        {% if module.eyebrow %}
+        <p class="lp-cta-banner__eyebrow">{{ module.eyebrow }}</p>
+        {% endif %}
+
+        {% if module.headline %}
+        <h2 class="lp-cta-banner__headline">{{ module.headline }}</h2>
+        {% endif %}
+
+        {% if module.subheadline %}
+        <p class="lp-cta-banner__subheadline">{{ module.subheadline }}</p>
+        {% endif %}
+
+        <div class="lp-cta-banner__buttons">
+          {% if module.primary_label %}
+          <a href="{{ module.primary_url|escape_attr }}" class="lp-cta-banner__btn lp-cta-banner__btn--primary">
+            {{ module.primary_label }}
+          </a>
+          {% endif %}
+          {% if module.secondary_label %}
+          <a href="{{ module.secondary_url|escape_attr }}" class="lp-cta-banner__btn lp-cta-banner__btn--secondary">
+            <i class="bi bi-download"></i>
+            {{ module.secondary_label }}
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll to top -->
+  {% if module.show_scroll_top %}
+  <a href="#" class="lp-cta-banner__scroll-top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">
+    <i class="bi bi-arrow-up"></i>
+  </a>
+  {% endif %}
+
+</div>

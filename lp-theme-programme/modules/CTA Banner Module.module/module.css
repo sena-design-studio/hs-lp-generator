@@ -1,0 +1,154 @@
+/* ── CTA Banner ───────────────────────────────────────────────────────────── */
+
+.lp-cta-banner {
+  position: relative;
+  padding: 100px 0;
+  background-color: var(--primary);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+/* Overlay — colour and opacity controlled via inline style */
+.lp-cta-banner__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Content sits above overlay */
+.lp-cta-banner__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Eyebrow ── */
+.lp-cta-banner__eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding: 5px 14px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+
+/* ── Headline ── */
+.lp-cta-banner__headline {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+/* ── Subheadline ── */
+.lp-cta-banner__subheadline {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin-bottom: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Buttons ── */
+.lp-cta-banner__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.lp-cta-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 30px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.lp-cta-banner__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
+}
+
+.lp-cta-banner__btn--primary:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+  border-color: color-mix(in srgb, var(--accent) 85%, #000);
+  color: #fff;
+}
+
+.lp-cta-banner__btn--secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.lp-cta-banner__btn--secondary:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* ── Scroll to top ── */
+.lp-cta-banner__scroll-top {
+  position: absolute;
+  bottom: 28px;
+  right: 32px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 18px;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.lp-cta-banner__scroll-top:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+  transform: translateY(-3px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 575px) {
+  .lp-cta-banner {
+    padding: 72px 0 80px;
+  }
+
+  .lp-cta-banner__buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .lp-cta-banner__btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lp-cta-banner__scroll-top {
+    bottom: 16px;
+    right: 16px;
+  }
+}

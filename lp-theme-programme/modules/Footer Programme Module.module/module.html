@@ -1,0 +1,79 @@
+<footer class="lp-footer-prog">
+  <div class="container">
+
+    <!-- Top row: logo + link groups -->
+    <div class="row g-5 lp-footer-prog__top">
+
+      <!-- Logo + tagline -->
+      <div class="col-12 col-md-4 col-lg-3">
+        {% if module.logo.src %}
+        <a href="/" class="lp-footer-prog__logo">
+          <img src="{{ module.logo.src|escape_url }}" alt="{{ module.logo.alt|escape_attr }}" loading="lazy">
+        </a>
+        {% endif %}
+        {% if module.tagline %}
+        <p class="lp-footer-prog__tagline">{{ module.tagline }}</p>
+        {% endif %}
+
+        <!-- Social icons -->
+        <div class="lp-footer-prog__social">
+          {% if module.social_linkedin %}
+          <a href="{{ module.social_linkedin|escape_attr }}" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <i class="bi bi-linkedin"></i>
+          </a>
+          {% endif %}
+          {% if module.social_twitter %}
+          <a href="{{ module.social_twitter|escape_attr }}" target="_blank" rel="noopener" aria-label="X / Twitter">
+            <i class="bi bi-twitter-x"></i>
+          </a>
+          {% endif %}
+          {% if module.social_instagram %}
+          <a href="{{ module.social_instagram|escape_attr }}" target="_blank" rel="noopener" aria-label="Instagram">
+            <i class="bi bi-instagram"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Link groups -->
+      {% if module.link_groups %}
+      {% for group in module.link_groups %}
+      <div class="col-6 col-md col-lg-2">
+        {% if group.group_label %}
+        <p class="lp-footer-prog__group-label">{{ group.group_label }}</p>
+        {% endif %}
+        {% if group.links %}
+        <ul class="lp-footer-prog__links">
+          {% set pairs = group.links.split(",") %}
+          {% for pair in pairs %}
+          {% set parts = pair.split(":") %}
+          <li>
+            <a href="{{ parts[1]|trim|escape_attr }}" class="lp-footer-prog__link">{{ parts[0]|trim }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+    </div>
+
+    <!-- Bottom row: copyright + legal -->
+    <div class="lp-footer-prog__bottom">
+      {% if module.copyright %}
+      <p class="lp-footer-prog__copyright">{{ module.copyright }}</p>
+      {% endif %}
+      {% if module.legal_links %}
+      <div class="lp-footer-prog__legal">
+        {% set pairs = module.legal_links.split(",") %}
+        {% for pair in pairs %}
+        {% set parts = pair.split(":") %}
+        <a href="{{ parts[1]|trim|escape_attr }}" class="lp-footer-prog__legal-link">{{ parts[0]|trim }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</footer>

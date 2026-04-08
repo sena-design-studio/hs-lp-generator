@@ -1,98 +1,53 @@
 [
+  { "id": "cur-section-title", "name": "section_title", "label": "Section Title", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Programme Curriculum" },
+  { "id": "cur-section-intro", "name": "section_intro", "label": "Section Intro", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Two years structured around academic foundations, industry immersion and global networking." },
   {
-    "id": "cur-section-title",
-    "name": "section_title",
-    "label": "Section Title",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": "Programme Curriculum"
-  },
-  {
-    "id": "cur-section-intro",
-    "name": "section_intro",
-    "label": "Section Intro",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "cur-cta-label",
-    "name": "cta_label",
-    "label": "Bottom CTA label (optional)",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": ""
-  },
-  {
-    "id": "cur-cta-url",
-    "name": "cta_url",
-    "label": "Bottom CTA URL",
-    "required": false,
-    "locked": false,
-    "allow_new_line": false,
-    "display_width": null,
-    "type": "text",
-    "default": "#"
-  },
-  {
-    "id": "cur-tabs",
-    "name": "tabs",
-    "label": "Tabs (years/phases)",
-    "required": false,
-    "locked": false,
-    "occurrence": {
-      "min": 1,
-      "max": 6,
-      "sorting_label_field": null,
-      "default": 2
-    },
+    "id": "cur-columns", "name": "columns", "label": "Curriculum Columns", "required": false, "locked": false,
+    "occurrence": { "min": 1, "max": 4, "sorting_label_field": null, "default": 2 },
     "children": [
+      { "id": "cur-col-label", "name": "col_label", "label": "Column label", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+      { "id": "cur-col-subtitle", "name": "col_subtitle", "label": "Column subtitle", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
       {
-        "id": "cur-tab-label",
-        "name": "tab_label",
-        "label": "Tab label (e.g. Year 1)",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      },
-      {
-        "id": "cur-tab-subtitle",
-        "name": "tab_subtitle",
-        "label": "Tab subtitle",
-        "required": false,
-        "locked": false,
-        "allow_new_line": false,
-        "display_width": null,
-        "type": "text",
-        "default": ""
-      },
-      {
-        "id": "cur-tab-courses",
-        "name": "courses",
-        "label": "Course list (rich text)",
-        "required": false,
-        "locked": false,
-        "display_width": null,
-        "type": "richtext",
-        "default": ""
+        "id": "cur-col-rows", "name": "rows", "label": "Course rows", "required": false, "locked": false,
+        "occurrence": { "min": 1, "max": 20, "sorting_label_field": null, "default": 3 },
+        "children": [
+          { "id": "cur-row-index", "name": "row_index", "label": "Index", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+          { "id": "cur-row-title", "name": "row_title", "label": "Course Title", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" },
+          { "id": "cur-row-desc", "name": "row_description", "label": "Course Description", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "" }
+        ],
+        "tab": "CONTENT", "expanded": false, "display_width": null, "type": "group", "default": []
       }
     ],
-    "tab": "CONTENT",
-    "expanded": false,
-    "display_width": null,
-    "type": "group",
-    "default": []
-  }
+    "tab": "CONTENT", "expanded": false, "display_width": null, "type": "group",
+    "default": [
+      {
+        "col_label": "Year 1",
+        "col_subtitle": "Academic Foundation & Leadership Development",
+        "rows": [
+          { "row_index": "M1", "row_title": "The Role of Raw Materials in the Global Economy", "row_description": "Global supply chains, geopolitics of critical materials, EU policy framework and the CRMA." },
+          { "row_index": "M2", "row_title": "Business Strategies for the Modern, Technological Age", "row_description": "Strategic management, digital transformation and innovation in the raw materials sector." },
+          { "row_index": "M3", "row_title": "Responsible Practices and Stakeholder Management", "row_description": "ESG frameworks, sustainability reporting, community engagement and responsible sourcing." },
+          { "row_index": "M4", "row_title": "Business Skills and Wealth Creation in Raw Materials", "row_description": "Financial modelling, project finance, valuation and investment in the extractive industries." },
+          { "row_index": "M5", "row_title": "Leadership, Management and Organisational Success", "row_description": "Executive leadership, people management and organisational change." },
+          { "row_index": "M6", "row_title": "Immersions, Seminars & Career Coaching", "row_description": "In-person immersions in Portugal and Hungary, open seminars and 3 individual career coaching sessions." }
+        ]
+      },
+      {
+        "col_label": "Year 2",
+        "col_subtitle": "Industry Immersion & Global Networking",
+        "rows": [
+          { "row_index": "01", "row_title": "Industry Visits", "row_description": "Visits to industry operations in Portugal, Spain and Greece — real exposure to the full raw materials value chain." },
+          { "row_index": "02", "row_title": "Mentoring with Industry Leaders", "row_description": "Individual mentoring sessions with senior executives and technical experts from the sector." },
+          { "row_index": "03", "row_title": "Open Seminars & Matchmaking Events", "row_description": "Sector networking events combining academic insights with direct industry and investor contacts." },
+          { "row_index": "04", "row_title": "Final Project", "row_description": "Individual dissertation or applied industry project, developed with a dedicated sector mentor." },
+          { "row_index": "05", "row_title": "Presentation of Projects — Open Event", "row_description": "Public showcase of final projects to investors, VCs and industry leaders." },
+          { "row_index": "06", "row_title": "Optional — Global Exchange", "row_description": "Global exchange or study experience — details to be confirmed." }
+        ]
+      }
+    ]
+  },
+  { "id": "cur-cta-eyebrow", "name": "cta_eyebrow", "label": "CTA eyebrow", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Want the full curriculum detail?" },
+  { "id": "cur-cta-subtitle", "name": "cta_subtitle", "label": "CTA subtitle", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Download the complete syllabus and course descriptions." },
+  { "id": "cur-cta-label", "name": "cta_label", "label": "CTA button label", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "Download Brochure" },
+  { "id": "cur-cta-url", "name": "cta_url", "label": "CTA button URL", "required": false, "locked": false, "allow_new_line": false, "display_width": null, "type": "text", "default": "#" }
 ]
