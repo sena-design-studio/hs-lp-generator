@@ -1,48 +1,96 @@
-<div class="lp-persona-cards">
+<div class="lp-testimonials">
   <div class="container">
 
     {% if module.section_title or module.section_intro %}
-    <div class="row mb-5">
-      <div class="col-12">
+    <div class="row justify-content-center mb-5">
+      <div class="col-12 col-lg-8 text-center">
         {% if module.section_title %}
-        <h2 class="lp-persona-cards__title">{{ module.section_title }}</h2>
+        <h2 class="lp-testimonials__title">{{ module.section_title }}</h2>
         {% endif %}
         {% if module.section_intro %}
-        <p class="lp-persona-cards__intro">{{ module.section_intro }}</p>
+        <p class="lp-testimonials__intro">{{ module.section_intro }}</p>
         {% endif %}
       </div>
     </div>
     {% endif %}
 
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4">
-      {% for card in module.cards %}
-      <div class="col">
-        <div class="lp-persona-card h-100">
-          {% if card.profile_image.src %}
-          <div class="lp-persona-card__image">
-            <img src="{{ card.profile_image.src|escape_url }}" alt="{{ card.card_title|escape_attr }}" loading="lazy">
-          </div>
-          {% endif %}
-          <div class="lp-persona-card__info">
-            {% if card.card_title %}
-            <p class="lp-persona-card__title">{{ card.card_title }}</p>
-            {% endif %}
-            {% if card.card_subtitle %}
-            <p class="lp-persona-card__subtitle">{{ card.card_subtitle }}</p>
-            {% endif %}
-            {% if card.card_tags %}
-            <div class="lp-persona-card__tags">
-              {% set tags = card.card_tags.split(",") %}
-              {% for tag in tags %}
-              <span class="lp-persona-card__tag">{{ tag|trim }}</span>
-              {% endfor %}
+    {% if module.testimonials %}
+    <div class="swiper lp-testimonials__swiper">
+      <div class="swiper-wrapper">
+        {% for item in module.testimonials %}
+        <div class="swiper-slide">
+          <div class="lp-testimonial">
+
+            <div class="lp-testimonial__mark">
+              <i class="bi bi-quote"></i>
             </div>
+
+            {% if item.quote %}
+            <div class="lp-testimonial__quote">{{ item.quote }}</div>
             {% endif %}
+
+            <div class="lp-testimonial__author">
+              {% if item.author_photo.src %}
+              <div class="lp-testimonial__photo">
+                <img src="{{ item.author_photo.src|escape_url }}" alt="{{ item.author_name|escape_attr }}" loading="lazy">
+              </div>
+              {% else %}
+              <div class="lp-testimonial__initials">
+                {{ item.author_name|truncate(2, true, '') }}
+              </div>
+              {% endif %}
+              <div class="lp-testimonial__author-info">
+                {% if item.author_name %}
+                <p class="lp-testimonial__name">{{ item.author_name }}</p>
+                {% endif %}
+                {% if item.author_role %}
+                <p class="lp-testimonial__role">{{ item.author_role }}</p>
+                {% endif %}
+              </div>
+            </div>
+
           </div>
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
+
+    <!-- Navigation arrows only -->
+    <div class="lp-testimonials__nav">
+      <button class="lp-testimonials__btn lp-testimonials__btn--prev" aria-label="Previous">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <button class="lp-testimonials__btn lp-testimonials__btn--next" aria-label="Next">
+        <i class="bi bi-arrow-right"></i>
+      </button>
+    </div>
+    {% endif %}
 
   </div>
 </div>
+
+<script>
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Swiper === 'undefined') return;
+    new Swiper('.lp-testimonials__swiper', {
+      slidesPerView: 1,
+      spaceBetween: 32,
+      loop: true,
+      autoplay: {
+        delay: 5000,
+        disableOnInteraction: false,
+        pauseOnMouseEnter: true
+      },
+      navigation: {
+        nextEl: '.lp-testimonials__btn--next',
+        prevEl: '.lp-testimonials__btn--prev'
+      },
+      breakpoints: {
+        768: { slidesPerView: 2 },
+        1024: { slidesPerView: 3 }
+      }
+    });
+  });
+})();
+</script>

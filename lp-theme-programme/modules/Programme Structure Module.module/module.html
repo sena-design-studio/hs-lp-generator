@@ -1,5 +1,11 @@
-<div class="lp-prog-structure lp-prog-structure--bg-{{ module.background }}">
-  <div class="container">
+<div class="lp-prog-structure lp-prog-structure--bg-{{ module.background }}{% if module.background_image.src %} lp-prog-structure--has-image{% endif %}"
+  {% if module.background_image.src %}style="background-image: url('{{ module.background_image.src|escape_url }}')"{% endif %}>
+
+  {% if module.background_image.src %}
+  <div class="lp-prog-structure__overlay" style="opacity: {{ (module.overlay_opacity|default(60)) / 100 }}"></div>
+  {% endif %}
+
+  <div class="container lp-prog-structure__inner">
 
     {% if module.section_title or module.section_intro %}
     <div class="row mb-5">
@@ -17,9 +23,9 @@
     <div class="row g-4">
       {% for col in module.columns %}
       <div class="col-12 col-md-6 col-lg">
-        <div class="lp-prog-structure__col">
 
-          <!-- Column header -->
+        <!-- White content card -->
+        <div class="lp-prog-structure__col">
           <div class="lp-prog-structure__col-header">
             {% if col.col_label %}
             <span class="lp-prog-structure__col-label">{{ col.col_label }}</span>
@@ -28,33 +34,31 @@
             <p class="lp-prog-structure__col-subtitle">{{ col.col_subtitle }}</p>
             {% endif %}
           </div>
-
-          <!-- Bullet content -->
           {% if col.col_items %}
           <div class="lp-prog-structure__col-items">
             {{ col.col_items }}
           </div>
           {% endif %}
+        </div>
 
-          <!-- Optional image with caption -->
-          {% if col.col_image.src %}
-          <div class="lp-prog-structure__col-image">
-            <img
-              src="{{ col.col_image.src|escape_url }}"
-              alt="{{ col.col_image.alt|escape_attr }}"
-              loading="lazy">
-            {% if col.image_label %}
-            <div class="lp-prog-structure__col-image-caption">
-              <span class="lp-prog-structure__col-image-label">{{ col.image_label }}</span>
-              {% if col.image_sublabel %}
-              <span class="lp-prog-structure__col-image-sublabel">{{ col.image_sublabel }}</span>
-              {% endif %}
-            </div>
+        <!-- Image card — separate element below with gap -->
+        {% if col.col_image.src %}
+        <div class="lp-prog-structure__col-image">
+          <img
+            src="{{ col.col_image.src|escape_url }}"
+            alt="{{ col.col_image.alt|escape_attr }}"
+            loading="lazy">
+          {% if col.image_label %}
+          <div class="lp-prog-structure__col-image-caption">
+            <span class="lp-prog-structure__col-image-label">{{ col.image_label }}</span>
+            {% if col.image_sublabel %}
+            <span class="lp-prog-structure__col-image-sublabel">{{ col.image_sublabel }}</span>
             {% endif %}
           </div>
           {% endif %}
-
         </div>
+        {% endif %}
+
       </div>
       {% endfor %}
     </div>

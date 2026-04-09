@@ -2,21 +2,36 @@
 
 .lp-prog-structure {
   padding: 60px 0;
+  position: relative;
+  background-color: #fff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-.lp-prog-structure--bg-white   { background: #fff; }
-.lp-prog-structure--bg-light   { background: var(--secondary); }
-.lp-prog-structure--bg-primary { background: var(--primary); }
+.lp-prog-structure--bg-white   { background-color: #fff; }
+.lp-prog-structure--bg-light   { background-color: var(--secondary); }
+.lp-prog-structure--bg-primary { background-color: var(--primary); }
 
-/* Section header */
+/* Overlay when background image is set */
+.lp-prog-structure__overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--primary);
+  z-index: 0;
+}
+
+.lp-prog-structure__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Section header ── */
 .lp-prog-structure__title {
   font-size: clamp(22px, 3vw, 32px);
   font-weight: 800;
   color: var(--primary);
   margin-bottom: 8px;
-}
-.lp-prog-structure--bg-primary .lp-prog-structure__title {
-  color: #fff;
 }
 
 .lp-prog-structure__intro {
@@ -24,27 +39,20 @@
   color: #666;
   margin-bottom: 0;
 }
-.lp-prog-structure--bg-primary .lp-prog-structure__intro {
-  color: rgba(255,255,255,0.75);
-}
 
-/* ── Column card ── */
+.lp-prog-structure--has-image .lp-prog-structure__title { color: #fff; }
+.lp-prog-structure--has-image .lp-prog-structure__intro { color: rgba(255,255,255,0.8); }
+.lp-prog-structure--bg-primary .lp-prog-structure__title { color: #fff; }
+.lp-prog-structure--bg-primary .lp-prog-structure__intro { color: rgba(255,255,255,0.75); }
+
+/* ── White content card ── */
 .lp-prog-structure__col {
   background: #fff;
   border-radius: var(--border-radius);
   overflow: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 
-.lp-prog-structure--bg-white .lp-prog-structure__col {
-  border: 1.5px solid #eee;
-  box-shadow: none;
-}
-
-/* Column header bar */
 .lp-prog-structure__col-header {
   background: var(--primary);
   padding: 16px 24px;
@@ -64,10 +72,8 @@
   margin: 4px 0 0;
 }
 
-/* Bullet list content */
 .lp-prog-structure__col-items {
   padding: 20px 24px;
-  flex: 1;
 }
 
 .lp-prog-structure__col-items ul {
@@ -102,14 +108,17 @@
   margin-top: 5px;
 }
 
-/* Optional image at bottom of column */
+/* ── Image card — separate element, gap above, fully rounded ── */
 .lp-prog-structure__col-image {
-  margin-top: auto;
+  margin-top: 16px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 
 .lp-prog-structure__col-image img {
   width: 100%;
-  height: 180px;
+  height: 200px;
   object-fit: cover;
   display: block;
 }

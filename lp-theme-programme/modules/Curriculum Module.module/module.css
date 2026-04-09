@@ -18,11 +18,11 @@
   margin-bottom: 0;
 }
 
-/* ── Grid — side by side columns ── */
+/* ── Grid — side by side columns with gap ── */
 .lp-curriculum__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  border: 1.5px solid #e0e8f0;
+  gap: 16px;
   border-radius: var(--border-radius);
   overflow: hidden;
   margin-top: 32px;
@@ -32,11 +32,9 @@
 .lp-curriculum__col {
   display: flex;
   flex-direction: column;
-  border-right: 1.5px solid #e0e8f0;
-}
-
-.lp-curriculum__col:last-child {
-  border-right: none;
+  border: 1.5px solid #e0e8f0;
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
 /* Column header */
@@ -179,15 +177,6 @@
 @media (max-width: 767px) {
   .lp-curriculum__grid {
     grid-template-columns: 1fr;
-  }
-
-  .lp-curriculum__col {
-    border-right: none;
-    border-bottom: 1.5px solid #e0e8f0;
-  }
-
-  .lp-curriculum__col:last-child {
-    border-bottom: none;
   }
 
   .lp-curriculum__cta-bar .row {
