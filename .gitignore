@@ -1,2 +1,4 @@
 .env
 .tokens.json
+install.sh
+update.sh
