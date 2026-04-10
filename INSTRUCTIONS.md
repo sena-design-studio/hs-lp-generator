@@ -1,4 +1,70 @@
-# Latigid LP Generator — Claude Instructions
+# Latigid LP Generator — Instruções Claude
+
+---
+
+## 🇵🇹 Para começar — Lê isto primeiro
+
+Bem-vindo ao LP Generator da Latigid. Esta ferramenta permite-te gerar, publicar e gerir landing pages no HubSpot directamente através do Claude, sem precisares de tocar no código.
+
+### Passo 1 — Liga o teu portal HubSpot
+
+Antes de qualquer coisa, tens de autorizar o acesso ao HubSpot:
+
+1. Abre **[auth.latigid.dev](https://auth.latigid.dev)** no browser
+2. Clica em **"Connect HubSpot Portal"**
+3. Faz login com a tua conta HubSpot e autoriza o acesso
+4. O portal fica registado — só tens de fazer isto uma vez
+
+Se vires o nome do portal na lista em `auth.latigid.dev`, já estás pronto.
+
+### Passo 2 — Abre o Claude Desktop
+
+Abre o Claude Desktop e usa o projecto **"LP Generator"**. Todas as conversas neste projecto já têm o contexto completo da ferramenta — não precisas de explicar nada de raiz.
+
+### O que podes pedir ao Claude
+
+Aqui ficam alguns exemplos do que podes fazer:
+
+**Gerar uma landing page de campanha de raiz:**
+> "Gera uma landing page para o cliente CloudTech sobre o produto VPS Pro. A cor principal é azul escuro (#1B3A6B), o logótipo está na pasta client-images/cloudtech. Usa o formulário de contacto."
+
+**Criar uma nova página com base num template existente:**
+> "Cria uma nova landing page no portal 2662575 usando o tema Latigid Generic LP, para uma campanha de webinar sobre cibersegurança. O título é 'Protege a tua empresa em 2025'."
+
+**Actualizar uma página já existente:**
+> "Actualiza a página ID 210048649336 com este novo headline e esta imagem de fundo."
+
+**Fazer upload de imagens de um cliente:**
+> "Faz upload de todas as imagens da pasta client-images/novocliente para o portal 2662575."
+
+**Procurar imagens de stock:**
+> "Encontra uma imagem de stock de mineração a céu aberto e faz upload para o portal."
+
+**Trabalhar no tema de programas (MBA, cursos, etc.):**
+> "Actualiza o módulo de Curriculum do tema Latigid Programme LP com estes conteúdos: [conteúdo]."
+
+### O que a ferramenta NÃO faz
+
+- Não publica páginas automaticamente — cria sempre um rascunho que tens de rever e publicar tu no HubSpot
+- Não tem acesso a portais que não estejam autorizados em `auth.latigid.dev`
+- Não substitui o bom senso — revê sempre o resultado antes de publicar
+
+### Problemas comuns
+
+| Problema | Solução |
+|---|---|
+| "Portal not connected" | Vai a auth.latigid.dev e autoriza o portal |
+| "Theme not found" | Confirma o nome exacto do tema no HubSpot Design Manager |
+| Página com layout errado | Pede ao Claude para rever o HTML do módulo |
+| Imagens não aparecem | Verifica se o upload foi feito para o portal correcto |
+
+---
+
+*O resto deste documento está em inglês para referência técnica do Filipe e da equipa de desenvolvimento.*
+
+---
+
+## Claude Instructions (EN)
 
 You are an expert HubSpot landing page generator for Latigid, a digital marketing agency. You have access to the `hs-lp-generator` MCP server which connects you directly to HubSpot.
 
@@ -120,6 +186,30 @@ Used for educational programme / MBA-style pages. Edit module files directly via
 - `upload_theme` → push changes
 - Never create a new page for iterations — use `update_page` with the existing page ID
 
+### Cloning an existing LP with new content
+
+Use this when a portal already has an established landing page system and you just need a new page with different content — no theme generation or file writing needed.
+
+**What you need from the user:**
+- Portal ID
+- Theme name OR existing page ID to clone layout from
+- Content brief (headline, sections, CTA, form)
+- Any new images (client folder or Pexels)
+
+**Steps:**
+1. `list_themes` — confirm the theme name exists in the target portal
+2. `get_forms` — pick the right form for this page
+3. `search_stock_image` or `scan_images` — source any new images needed
+4. `create_page` — create a new draft using the existing theme
+5. `update_page` — populate with new content
+
+No local file writing, no uploads — the theme is already in HubSpot. This is the fastest workflow and the right default when working within an established client portal.
+
+**If the portal has its own custom theme (not one of ours):**
+1. `list_themes` — identify the theme and note its module structure
+2. Ask the user which modules are used and what fields they expect
+3. Proceed with `create_page` + `update_page` against that theme
+
 ---
 
 ## Key HubSpot field constraints
@@ -133,8 +223,8 @@ Used for educational programme / MBA-style pages. Edit module files directly via
 ## Frontend stack
 
 - **Bootstrap 5.3.3** — loaded via CDN in both themes
-- **Bootstrap Icons 1.13.1** — loaded via CDN. Use class names like `bi-star`, `bi-globe`, `bi-calendar`. Full reference: https://icons.getbootstrap.com
-- **Swiper 11** — loaded in `lp-theme-programme/templates/layout/base.html`. Used by Persona Cards Module (testimonials slider). Selector: `.lp-testimonials__swiper`
+- **Bootstrap Icons 1.13.1** — loaded via CDN. Full reference: https://icons.getbootstrap.com
+- **Swiper 11** — loaded in `lp-theme-programme/templates/layout/base.html`. Selector: `.lp-testimonials__swiper`
 
 ---
 
