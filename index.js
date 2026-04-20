@@ -796,7 +796,7 @@ server.tool(
     meta_description: z.string().optional().describe("New meta description"),
     slug:         z.string().optional().describe("New URL slug, e.g. /new-slug"),
     template_path: z.string().optional().describe("New template path if switching theme, e.g. ThemeName/templates/layout/base.html"),
-    widgets:      z.record(z.any()).optional().describe("Module widget overrides keyed by widget path/id — use get_page first to see existing widget keys"),
+    widgets:      z.string().optional().describe("JSON string of module widget overrides — use get_page first, then pass as JSON.stringify(...)"),
   },
   async ({ portal_id, page_id, name, html_title, meta_description, slug, template_path, widgets }) => {
     try {
@@ -809,7 +809,10 @@ server.tool(
       if (meta_description) body.metaDescription = meta_description;
       if (slug)             body.slug = slug;
       if (template_path)    body.templatePath = template_path;
-      if (widgets)          body.layoutSections = widgets;
+      if (widgets) {
+        try { body.layoutSections = JSON.parse(widgets); }
+        catch { throw new Error('widgets must be valid JSON string'); }
+      }
 
       if (Object.keys(body).length === 0) {
         throw new Error("No fields provided to update. Pass at least one of: name, html_title, meta_description, slug, template_path, widgets.");
