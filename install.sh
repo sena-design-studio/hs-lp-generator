@@ -14,8 +14,8 @@ section() { echo -e "\n${BOLD}$1${NC}"; echo -e "  $2\n"; }
 clear
 header "Latigid LP Generator — Installer"
 
-# ─── Step 1: Node.js check ────────────────────────────────────────────────────
-section "Step 1/5" "Checking requirements..."
+# ─── Step 1: Requirements ─────────────────────────────────────────────────────
+section "Step 1/6" "Checking requirements..."
 
 if ! command -v node &> /dev/null; then
   error "Node.js not found. Install from https://nodejs.org then re-run."
@@ -24,13 +24,13 @@ fi
 log "Node.js $(node -v) found"
 
 if ! command -v git &> /dev/null; then
-  error "Git not found. Install Xcode Command Line Tools: xcode-select --install"
+  error "Git not found. Run: xcode-select --install"
   exit 1
 fi
-log "Git $(git --version | awk '{print $3}') found"
+log "Git found"
 
-# ─── Step 2: Clone or update repo ─────────────────────────────────────────────
-section "Step 2/5" "Installing MCP server..."
+# ─── Step 2: Clone or update ──────────────────────────────────────────────────
+section "Step 2/6" "Installing MCP server..."
 
 mkdir -p "$HOME/.latigid"
 if [ -d "$INSTALL_DIR/.git" ]; then
@@ -48,8 +48,30 @@ log "Installing Node dependencies..."
 npm install --quiet
 log "Dependencies ready"
 
-# ─── Step 3: Write .env ───────────────────────────────────────────────────────
-section "Step 3/5" "Configuring environment..."
+# ─── Step 3: Anthropic API Key ────────────────────────────────────────────────
+section "Step 3/6" "Anthropic API Key (for wireframe analysis and web search)"
+
+echo -e "  You need a personal Anthropic API key."
+echo -e "  This keeps your usage separate from the rest of the team."
+echo ""
+echo -e "  ${BOLD}1. Open this URL in your browser:${NC}"
+echo -e "     https://console.anthropic.com/settings/keys"
+echo -e "  ${BOLD}2. Click 'Create Key', name it 'LP Generator'${NC}"
+echo -e "  ${BOLD}3. Copy the key (starts with sk-ant-)${NC}"
+echo -e "  ${BOLD}4. Paste it below and press Enter${NC}"
+echo ""
+printf "  Your Anthropic API key: "
+read -r ANTHROPIC_KEY
+
+# Basic validation
+if [[ "$ANTHROPIC_KEY" != sk-ant-* ]]; then
+  warn "Key doesn't look right (should start with sk-ant-) — saving anyway, you can update .env later."
+else
+  log "Anthropic API key looks good"
+fi
+
+# ─── Step 4: Write .env ───────────────────────────────────────────────────────
+section "Step 4/6" "Configuring environment..."
 
 write_env() {
   local onedrive_path="$1"
@@ -67,8 +89,11 @@ HS_REDIRECT_URI=https://auth.latigid.dev/oauth/callback
 REMOTE_AUTH_URL=https://auth.latigid.dev
 AUTH_SECRET=REPLACE_WITH_SECRET
 
-# Pexels API
+# Pexels API (shared)
 PEXELS_API_KEY=apdLrgHDvp6MjgeJSE2mmmQ3ddZYnjKIKnwCh2e8rul6hvE5yh5BtGZw
+
+# Anthropic API (personal — do not share)
+ANTHROPIC_API_KEY=${ANTHROPIC_KEY}
 
 # OneDrive shared folder
 ONEDRIVE_PATH=${onedrive_path}
@@ -76,23 +101,29 @@ EOF
 }
 
 if [ -f "$INSTALL_DIR/.env" ]; then
-  # Patch redirect URI if pointing to localhost
+  # Patch existing .env
   if grep -q "localhost" "$INSTALL_DIR/.env"; then
-    warn "Fixing redirect URI (was pointing to localhost)..."
+    warn "Fixing redirect URI..."
     sed -i '' 's|HS_REDIRECT_URI=http://localhost:3000/oauth/callback|HS_REDIRECT_URI=https://auth.latigid.dev/oauth/callback|g' "$INSTALL_DIR/.env"
-    log ".env patched"
-  else
-    log ".env already configured"
   fi
+  # Update Anthropic key if provided
+  if [ -n "$ANTHROPIC_KEY" ]; then
+    if grep -q "^ANTHROPIC_API_KEY=" "$INSTALL_DIR/.env"; then
+      sed -i '' "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$ANTHROPIC_KEY|" "$INSTALL_DIR/.env"
+    else
+      echo "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" >> "$INSTALL_DIR/.env"
+    fi
+    log "Anthropic API key saved to .env"
+  fi
+  log ".env updated"
 else
   write_env ""
-  log ".env created (secrets to be filled in by your admin)"
+  log ".env created"
 fi
 
-# ─── Step 4: OneDrive folder detection ────────────────────────────────────────
-section "Step 4/5" "Setting up shared template library (OneDrive)..."
+# ─── Step 5: OneDrive detection ───────────────────────────────────────────────
+section "Step 5/6" "Setting up shared template library (OneDrive)..."
 
-# Try to auto-detect common OneDrive paths first
 DETECTED_ONEDRIVE=""
 for candidate in \
   "$HOME/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents" \
@@ -105,7 +136,7 @@ for candidate in \
 done
 
 if [ -n "$DETECTED_ONEDRIVE" ]; then
-  echo -e "  ${GREEN}Found OneDrive folder automatically:${NC}"
+  echo -e "  ${GREEN}Found OneDrive folder:${NC}"
   echo -e "  ${BOLD}$DETECTED_ONEDRIVE${NC}\n"
   read -p "  Use this folder? [Y/n] " confirm
   confirm=${confirm:-Y}
@@ -120,13 +151,11 @@ fi
 if [ -z "$DETECTED_ONEDRIVE" ]; then
   echo -e "  ${YELLOW}OneDrive folder not found automatically.${NC}"
   echo ""
-  echo -e "  ${BOLD}Drag and drop your 'MCP Claude - Documents' folder${NC}"
+  echo -e "  ${BOLD}Drag your 'MCP Claude - Documents' folder${NC}"
   echo -e "  from Finder into this Terminal window, then press Enter:"
   echo ""
   printf "  > "
   read -r raw_path
-
-  # Strip surrounding quotes and whitespace (macOS drag-drop adds them)
   ONEDRIVE_PATH=$(echo "$raw_path" | sed "s/^[[:space:]'\"]*//;s/[[:space:]'\"]*$//")
 
   if [ ! -d "$ONEDRIVE_PATH" ]; then
@@ -134,58 +163,48 @@ if [ -z "$DETECTED_ONEDRIVE" ]; then
     error "Make sure OneDrive is synced and try again."
     exit 1
   fi
-  log "OneDrive path set: $ONEDRIVE_PATH"
+  log "OneDrive path set"
 fi
 
-# Validate required subfolders exist
+# Validate subfolders
 MISSING_FOLDERS=()
 for folder in "lp-theme-generic" "lp-theme-programme" "client-images" "generated-themes"; do
   if [ ! -d "$ONEDRIVE_PATH/$folder" ]; then
     MISSING_FOLDERS+=("$folder")
   fi
 done
-
 if [ ${#MISSING_FOLDERS[@]} -gt 0 ]; then
-  warn "Some expected folders are missing from OneDrive:"
-  for f in "${MISSING_FOLDERS[@]}"; do
-    echo -e "    ${YELLOW}·${NC} $f"
-  done
-  warn "OneDrive may still be syncing. You can re-run this installer once sync completes."
+  warn "Some folders missing from OneDrive (may still be syncing):"
+  for f in "${MISSING_FOLDERS[@]}"; do echo -e "    · $f"; done
 fi
 
-# Write ONEDRIVE_PATH to .env
+# Save to .env
 if grep -q "^ONEDRIVE_PATH=" "$INSTALL_DIR/.env"; then
   sed -i '' "s|^ONEDRIVE_PATH=.*|ONEDRIVE_PATH=$ONEDRIVE_PATH|" "$INSTALL_DIR/.env"
 else
   echo "ONEDRIVE_PATH=$ONEDRIVE_PATH" >> "$INSTALL_DIR/.env"
 fi
-log "ONEDRIVE_PATH saved to .env"
+log "ONEDRIVE_PATH saved"
 
-# Create symlinks so the MCP server can find theme files via relative paths
+# Create symlinks
 for folder in "lp-theme-generic" "lp-theme-programme" "generated-themes" "client-images"; do
   LINK="$INSTALL_DIR/$folder"
   TARGET="$ONEDRIVE_PATH/$folder"
-  if [ -L "$LINK" ]; then
-    rm "$LINK"  # Remove stale symlink
-  fi
+  [ -L "$LINK" ] && rm "$LINK"
   if [ -d "$TARGET" ]; then
     ln -s "$TARGET" "$LINK"
     log "Linked $folder → OneDrive"
   else
-    warn "$folder not in OneDrive yet — skipping symlink (re-run installer after sync)"
+    warn "$folder not in OneDrive yet — re-run installer after sync"
   fi
 done
 
-# ─── Step 5: Claude Desktop config ────────────────────────────────────────────
-section "Step 5/5" "Configuring Claude Desktop..."
+# ─── Step 6: Claude Desktop config ────────────────────────────────────────────
+section "Step 6/6" "Configuring Claude Desktop..."
 
 CLAUDE_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 mkdir -p "$(dirname "$CLAUDE_CONFIG")"
-
-if [ -f "$CLAUDE_CONFIG" ]; then
-  cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.bak"
-  log "Backed up existing Claude config"
-fi
+[ -f "$CLAUDE_CONFIG" ] && cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.bak" && log "Backed up existing Claude config"
 
 node -e "
 const fs = require('fs');
@@ -207,13 +226,13 @@ header "Installation complete! 🎉"
 
 echo -e "  ${BOLD}Next steps:${NC}"
 echo ""
-echo -e "  1. ${BOLD}Get your secrets${NC} from Filipe (Slack) and add them to:"
+echo -e "  1. ${BOLD}Get your secrets from Filipe${NC} (via Slack) and update:"
 echo -e "     $INSTALL_DIR/.env"
-echo -e "     (Fill in HS_CLIENT_SECRET and AUTH_SECRET)"
+echo -e "     Fill in: HS_CLIENT_SECRET and AUTH_SECRET"
 echo ""
 echo -e "  2. ${BOLD}Restart Claude Desktop${NC} — Cmd+Q then reopen"
 echo ""
-echo -e "  3. ${BOLD}Connect your HubSpot portal${NC} — in Claude Desktop, ask:"
+echo -e "  3. ${BOLD}Connect HubSpot${NC} — ask Claude:"
 echo -e "     ${GREEN}\"List the themes in portal 2662575\"${NC}"
 echo -e "     Claude will open the auth page automatically."
 echo ""
