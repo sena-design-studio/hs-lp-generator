@@ -11,10 +11,10 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.28.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "open": "^11.0.0",
-    "zod": "^4.3.6"
+    "zod": "^3.25.76"
   }
 }

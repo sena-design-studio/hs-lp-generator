@@ -741,13 +741,17 @@ Return ONLY a valid JSON array. No explanation, no markdown, no backticks.`;
 
 
 
+
+
+
+
 // ─── TOOL: get_page ───────────────────────────────────────────────────────────
 server.tool(
   "get_page",
   "Get the current content and module field values of an existing HubSpot landing page",
   {
     portal_id: z.string().describe("HubSpot portal ID"),
-    page_id:   z.string().describe("HubSpot page ID"),
+    page_id: z.string().describe("HubSpot page ID"),
   },
   async ({ portal_id, page_id }) => {
     try {
@@ -762,16 +766,16 @@ server.tool(
         content: [{ type: "text", text: JSON.stringify({
           status: "ok",
           page: {
-            id:        page.id,
-            name:      page.name,
-            slug:      page.slug,
-            state:     page.state,
-            template:  page.templatePath,
-            updated:   page.updatedAt,
+            id: page.id,
+            name: page.name,
+            slug: page.slug,
+            state: page.state,
+            template: page.templatePath,
+            updated: page.updatedAt,
             draft_url: `https://app.hubspot.com/pages/${portal_id}/editor/${page.id}`,
-            widgets:   page.layoutSections ?? {},
+            widgets: page.layoutSections ?? {},
             meta_title: page.htmlTitle ?? "",
-            meta_desc:  page.metaDescription ?? "",
+            meta_desc: page.metaDescription ?? "",
           }
         })}],
       };
@@ -784,31 +788,31 @@ server.tool(
 // ─── TOOL: update_page_content ────────────────────────────────────────────────
 server.tool(
   "update_page_content",
-  "Update the content of an existing HubSpot landing page — change name, meta, slug, or module field values without creating a new page",
+  "Update the content of an existing HubSpot landing page without creating a new page. Pass empty string to skip a field.",
   {
-    portal_id:        z.string().describe("HubSpot portal ID"),
-    page_id:          z.string().describe("HubSpot page ID to update"),
-    name:             z.string().optional().describe("New internal page name"),
-    html_title:       z.string().optional().describe("New SEO/browser tab title"),
-    meta_description: z.string().optional().describe("New meta description"),
-    slug:             z.string().optional().describe("New URL slug, e.g. /new-slug"),
-    template_path:    z.string().optional().describe("New template path if switching theme"),
-    widgets:          z.string().optional().describe("JSON string of module widget overrides — use get_page first to see existing widget keys"),
+    portal_id: z.string().describe("HubSpot portal ID"),
+    page_id: z.string().describe("HubSpot page ID to update"),
+    name: z.string().describe("New page name, or empty string to skip"),
+    html_title: z.string().describe("New SEO title, or empty string to skip"),
+    meta_description: z.string().describe("New meta description, or empty string to skip"),
+    slug: z.string().describe("New URL slug, or empty string to skip"),
+    template_path: z.string().describe("New template path, or empty string to skip"),
+    widgets: z.string().describe("JSON string of module widget overrides, or empty string to skip"),
   },
   async ({ portal_id, page_id, name, html_title, meta_description, slug, template_path, widgets }) => {
     try {
       const token = await getValidAccessToken(portal_id);
       const body = {};
-      if (name)             body.name = name;
-      if (html_title)       body.htmlTitle = html_title;
+      if (name) body.name = name;
+      if (html_title) body.htmlTitle = html_title;
       if (meta_description) body.metaDescription = meta_description;
-      if (slug)             body.slug = slug;
-      if (template_path)    body.templatePath = template_path;
+      if (slug) body.slug = slug;
+      if (template_path) body.templatePath = template_path;
       if (widgets) {
         try { body.layoutSections = JSON.parse(widgets); }
-        catch { throw new Error("widgets must be a valid JSON string"); }
+        catch { throw new Error("widgets must be valid JSON"); }
       }
-      if (Object.keys(body).length === 0) throw new Error("No fields provided to update.");
+      if (Object.keys(body).length === 0) throw new Error("No fields provided.");
       const res = await fetch(
         `https://api.hubapi.com/cms/v3/pages/landing-pages/${page_id}`,
         {
@@ -840,8 +844,8 @@ server.tool(
   "web_search",
   "Search the web using the Anthropic API with web search enabled",
   {
-    query:   z.string().describe("Search query"),
-    context: z.string().default("").describe("Optional context about why you are searching"),
+    query: z.string().describe("Search query"),
+    context: z.string().describe("Optional context about why you are searching, or empty string"),
   },
   async ({ query, context }) => {
     try {
@@ -855,9 +859,7 @@ server.tool(
         return process.env.ANTHROPIC_API_KEY || "";
       })();
       if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not set in .env");
-
       const userMessage = context ? `Search for: ${query}\nContext: ${context}` : `Search for: ${query}`;
-
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -872,14 +874,9 @@ server.tool(
           messages: [{ role: "user", content: userMessage }],
         }),
       });
-
       if (!response.ok) throw new Error(`Anthropic API error: ${response.status} ${await response.text()}`);
       const data = await response.json();
-      const text = data.content
-        .filter(b => b.type === "text")
-        .map(b => b.text)
-        .join("\n");
-
+      const text = data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
       return {
         content: [{ type: "text", text: JSON.stringify({ status: "ok", query, result: text }) }],
       };
