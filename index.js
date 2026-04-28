@@ -886,6 +886,225 @@ server.tool(
   }
 );
 
+// ─── TOOL: list_emails ────────────────────────────────────────────────────────
+server.tool(
+  "list_emails",
+  "List marketing emails in a HubSpot portal, with optional status filter",
+  {
+    portal_id: z.string().describe("HubSpot portal ID"),
+    status: z.enum(["DRAFT", "PUBLISHED", "SCHEDULED", "ALL"]).default("ALL").describe("Filter by email status. Defaults to ALL."),
+    limit: z.number().default(20).describe("Max number of emails to return (default 20, max 100)"),
+  },
+  async ({ portal_id, status, limit }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+      const params = new URLSearchParams({
+        limit: String(Math.min(limit, 100)),
+        orderBy: "-updated",
+      });
+      if (status !== "ALL") params.append("state", status);
+
+      const res = await fetch(
+        `https://api.hubapi.com/marketing/v3/emails?${params}`,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+      );
+      if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
+      const data = await res.json();
+
+      const emails = (data.results || []).map((e) => ({
+        id: e.id,
+        name: e.name,
+        subject: e.subject,
+        status: e.state,
+        updated: e.updatedAt,
+        from_name: e.fromName,
+        from_email: e.fromEmail,
+      }));
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ status: "ok", portal_id, total: emails.length, emails }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: get_email ──────────────────────────────────────────────────────────
+server.tool(
+  "get_email",
+  "Get the full content and settings of an existing HubSpot marketing email by ID",
+  {
+    portal_id: z.string().describe("HubSpot portal ID"),
+    email_id:  z.string().describe("HubSpot email ID"),
+  },
+  async ({ portal_id, email_id }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+      const res = await fetch(
+        `https://api.hubapi.com/marketing/v3/emails/${email_id}`,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+      );
+      if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
+      const e = await res.json();
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            email: {
+              id: e.id,
+              name: e.name,
+              subject: e.subject,
+              preview_text: e.previewText,
+              status: e.state,
+              from_name: e.fromName,
+              from_email: e.fromEmail,
+              html_body: e.content?.body || "",
+              plain_text_body: e.content?.plainTextBody || "",
+              campaign_id: e.campaignId || null,
+              updated: e.updatedAt,
+              created: e.createdAt,
+            },
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: create_email ───────────────────────────────────────────────────────
+server.tool(
+  "create_email",
+  "Create a new draft marketing email in HubSpot from a subject, body and settings",
+  {
+    portal_id:       z.string().describe("HubSpot portal ID"),
+    name:            z.string().describe("Internal email name (shown in HubSpot dashboard)"),
+    subject:         z.string().describe("Email subject line"),
+    preview_text:    z.string().default("").describe("Preview/preheader text shown in inbox"),
+    from_name:       z.string().describe("Sender display name"),
+    from_email:      z.string().describe("Sender email address (must be verified in HubSpot)"),
+    html_body:       z.string().describe("Full HTML body of the email"),
+    plain_text_body: z.string().default("").describe("Plain text fallback body"),
+    campaign_id:     z.string().default("").describe("Optional HubSpot campaign ID, or empty string to skip"),
+  },
+  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, campaign_id }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+
+      const payload = {
+        name,
+        subject,
+        previewText: preview_text,
+        fromName: from_name,
+        fromEmail: from_email,
+        content: {
+          body: html_body,
+          plainTextBody: plain_text_body,
+        },
+        ...(campaign_id ? { campaignId: campaign_id } : {}),
+      };
+
+      const res = await fetch(
+        "https://api.hubapi.com/marketing/v3/emails",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
+      const data = await res.json();
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            email_id: data.id,
+            name: data.name,
+            subject: data.subject,
+            state: data.state,
+            edit_url: `https://app.hubspot.com/email/${portal_id}/edit/${data.id}`,
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: update_email_content ───────────────────────────────────────────────
+server.tool(
+  "update_email_content",
+  "Update the content or settings of an existing HubSpot draft email. Pass empty string to skip a field.",
+  {
+    portal_id:       z.string().describe("HubSpot portal ID"),
+    email_id:        z.string().describe("HubSpot email ID to update"),
+    name:            z.string().describe("New internal email name, or empty string to skip"),
+    subject:         z.string().describe("New subject line, or empty string to skip"),
+    preview_text:    z.string().describe("New preview/preheader text, or empty string to skip"),
+    from_name:       z.string().describe("New sender display name, or empty string to skip"),
+    from_email:      z.string().describe("New sender email address, or empty string to skip"),
+    html_body:       z.string().describe("New HTML body, or empty string to skip"),
+    plain_text_body: z.string().describe("New plain text body, or empty string to skip"),
+  },
+  async ({ portal_id, email_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+
+      const payload = {};
+      if (name)         payload.name        = name;
+      if (subject)      payload.subject     = subject;
+      if (preview_text) payload.previewText = preview_text;
+      if (from_name)    payload.fromName    = from_name;
+      if (from_email)   payload.fromEmail   = from_email;
+
+      const content = {};
+      if (html_body)       content.body          = html_body;
+      if (plain_text_body) content.plainTextBody = plain_text_body;
+      if (Object.keys(content).length) payload.content = content;
+
+      if (Object.keys(payload).length === 0) throw new Error("No fields provided.");
+
+      const res = await fetch(
+        `https://api.hubapi.com/marketing/v3/emails/${email_id}`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
+      const data = await res.json();
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            email_id: data.id,
+            name: data.name,
+            subject: data.subject,
+            state: data.state,
+            updated_fields: Object.keys(payload),
+            edit_url: `https://app.hubspot.com/email/${portal_id}/edit/${data.id}`,
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
 // ─── START ────────────────────────────────────────────────────────────────────
 const transport = new StdioServerTransport();
 await server.connect(transport);

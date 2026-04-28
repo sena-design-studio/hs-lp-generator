@@ -1,4 +1,10 @@
 .env
 .tokens.json
+.DS_Store
+node_modules/
+# install.sh is distributed separately (Slack/Drive) to avoid the chicken/egg
+# problem: the team can't `git clone` the repo without already having a script
+# to do the cloning. update.sh ships in the repo so `git pull` keeps it fresh.
 install.sh
-update.sh
+# One-shot migration scripts shared via Slack — not part of the repo.
+migrate-new-app.sh
