@@ -2,9 +2,20 @@
 .tokens.json
 .DS_Store
 node_modules/
-# install.sh is distributed separately (Slack/Drive) to avoid the chicken/egg
-# problem: the team can't `git clone` the repo without already having a script
-# to do the cloning. update.sh ships in the repo so `git pull` keeps it fresh.
-install.sh
-# One-shot migration scripts shared via Slack — not part of the repo.
+
+# install.sh is the source of truth — tracked in git so:
+#   - The .pkg build kit can bundle it (installer/build.sh copies it)
+#   - Teammates can curl-pipe it directly from GitHub
+#   - update.sh ships in the repo so `git pull` keeps it fresh
+#
+# Install LP Generator.command is a deprecated double-click entry point —
+# replaced by LP-Generator-Installer.pkg. Kept gitignored for the few users
+# who still want the .command fallback.
+Install LP Generator.command
+
+# One-shot migration scripts — distributed via Slack, not the repo.
 migrate-new-app.sh
+
+# .pkg build artifacts.
+installer/dist/
+*.pkg

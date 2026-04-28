@@ -2,16 +2,28 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  Latigid LP Generator — Installer
 # ─────────────────────────────────────────────────────────────────────────────
-#  Distributed separately (Slack/Drive) — not via git clone.
-#  Safe to re-run: every step is idempotent.
+#  Single source of truth. Used by three entry points:
+#    - bash install.sh                            (CLI / advanced users)
+#    - curl -sL <raw>/install.sh | bash           (one-liner)
+#    - LP-Generator-Installer.pkg                 (bundles + runs this script)
+#
+#  Idempotent: any prior install at ~/.latigid/hs-lp-generator is wiped clean.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -e
 
+# ─── Constants ────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/sena-design-studio/hs-lp-generator.git"
 INSTALL_DIR="$HOME/.latigid/hs-lp-generator"
 ENV_FILE="$INSTALL_DIR/.env"
 CLAUDE_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# HubSpot OAuth app — pinned. Bump these when migrating to a new app.
+HS_APP_ID="37936322"
+HS_CLIENT_ID="891cdadd-e450-44b7-9c36-c6e0166e7825"
+
+# Node.js LTS — pinned. Bump when a newer LTS is preferred.
+NODE_VERSION="22.12.0"
 
 # ─── Pretty output ────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BOLD='\033[1m'; NC='\033[0m'
@@ -21,103 +33,133 @@ error()   { echo -e "${RED}✗${NC} $1" >&2; }
 header()  { echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; echo -e "  ${BOLD}$1${NC}"; echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"; }
 section() { echo -e "\n${BOLD}$1${NC}  $2"; }
 
-trap 'error "Install failed at line $LINENO. See output above for details."' ERR
+trap 'error "Install failed at line $LINENO. Press Enter to close."; read -r _; exit 1' ERR
 
 clear
 header "Latigid LP Generator — Installer"
 
-# ─── Step 1: Requirements ─────────────────────────────────────────────────────
-section "[1/6]" "Checking requirements..."
+# ─── Step 1: Xcode Command Line Tools (gives us git) ──────────────────────────
+section "[1/8]" "Checking Xcode Command Line Tools..."
 
-if ! command -v node &>/dev/null; then
-  error "Node.js not found. Install from https://nodejs.org and re-run."
+if ! xcode-select -p &>/dev/null; then
+  warn "Xcode Command Line Tools missing — Apple's installer will open."
+  echo "  Click 'Install' in the dialog. This takes 5–10 minutes."
+  echo "  Once it finishes, re-run this installer."
+  echo ""
+  xcode-select --install 2>/dev/null || true
+  read -r -p "  Press Enter to close..." _
   exit 1
 fi
-log "Node.js $(node -v)"
-
 if ! command -v git &>/dev/null; then
-  error "Git not found. Run: xcode-select --install"
+  error "Git not found despite Xcode CLI tools being installed."
+  error "Run:  sudo xcode-select --reset && xcode-select --install"
   exit 1
 fi
 log "Git $(git --version | awk '{print $3}')"
 
-# ─── Step 2: Clone or update ──────────────────────────────────────────────────
-section "[2/6]" "Installing MCP server..."
+# ─── Step 2: Node.js (auto-install if missing) ────────────────────────────────
+section "[2/8]" "Checking Node.js..."
 
-mkdir -p "$(dirname "$INSTALL_DIR")"
-if [ -d "$INSTALL_DIR/.git" ]; then
-  warn "Existing install found — pulling latest..."
-  (cd "$INSTALL_DIR" && git pull --quiet origin main)
-  log "Pulled latest"
-else
-  git clone --quiet "$REPO_URL" "$INSTALL_DIR"
-  log "Repository cloned to $INSTALL_DIR"
+install_node_via_pkg() {
+  local PKG_URL="https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}.pkg"
+  local PKG_PATH="/tmp/node-v${NODE_VERSION}.pkg"
+  echo "  Downloading Node.js v${NODE_VERSION} from nodejs.org..."
+  if ! curl -fL --silent --show-error -o "$PKG_PATH" "$PKG_URL"; then
+    error "Download failed. Check your internet connection."
+    return 1
+  fi
+  echo "  Installing — your Mac password will be requested..."
+  if ! sudo installer -pkg "$PKG_PATH" -target /; then
+    error "Node.js install failed."
+    rm -f "$PKG_PATH"
+    return 1
+  fi
+  rm -f "$PKG_PATH"
+  export PATH="/usr/local/bin:$PATH"
+}
+
+if ! command -v node &>/dev/null; then
+  warn "Node.js not found — installing now."
+  if command -v brew &>/dev/null; then
+    echo "  Homebrew detected — installing via brew (no password needed)..."
+    if ! brew install node --quiet; then
+      warn "Homebrew install failed — falling back to official .pkg installer."
+      install_node_via_pkg || exit 1
+    fi
+  else
+    install_node_via_pkg || exit 1
+  fi
+  if ! command -v node &>/dev/null; then
+    error "Node.js still not detected. Restart Terminal and re-run the installer."
+    exit 1
+  fi
 fi
+log "Node.js $(node -v)"
+
+# ─── Step 3: Wipe any prior install ───────────────────────────────────────────
+section "[3/8]" "Preparing install directory..."
+
+if [ -d "$INSTALL_DIR" ]; then
+  warn "Existing install found at $INSTALL_DIR — removing for clean reinstall."
+  rm -rf "$INSTALL_DIR"
+  log "Old install removed"
+fi
+mkdir -p "$(dirname "$INSTALL_DIR")"
+
+# ─── Step 4: Clone fresh + npm install ────────────────────────────────────────
+section "[4/8]" "Downloading latest version..."
+
+git clone --quiet "$REPO_URL" "$INSTALL_DIR"
+log "Repository cloned"
 
 (cd "$INSTALL_DIR" && npm install --quiet)
 log "Node dependencies installed"
 
-# ─── Step 3: Anthropic API key ────────────────────────────────────────────────
-section "[3/6]" "Anthropic API key"
+# ─── Step 5: Credentials ──────────────────────────────────────────────────────
+section "[5/8]" "Configure credentials..."
 
-# Reuse existing key if already configured
-EXISTING_KEY=""
-if [ -f "$ENV_FILE" ]; then
-  EXISTING_KEY=$(grep -E '^ANTHROPIC_API_KEY=' "$ENV_FILE" | sed 's/^ANTHROPIC_API_KEY=//' || true)
+echo ""
+echo -e "  ${BOLD}Anthropic API key${NC}  (personal — get one from console.anthropic.com)"
+echo "  Used by analyse_wireframe and web_search tools."
+printf "  > "
+read -r ANTHROPIC_KEY
+if [[ "$ANTHROPIC_KEY" != sk-ant-* ]]; then
+  warn "Key doesn't start with sk-ant- — saving anyway, edit .env later if wrong."
 fi
 
-if [ -n "$EXISTING_KEY" ] && [[ "$EXISTING_KEY" == sk-ant-* ]]; then
-  log "Existing Anthropic key found in .env — keeping it"
-  ANTHROPIC_KEY="$EXISTING_KEY"
-else
-  echo "  You need a personal Anthropic API key (used by analyse_wireframe + web_search)."
-  echo "  This keeps your usage separate from the rest of the team."
-  echo ""
-  echo "  1. Open: https://console.anthropic.com/settings/keys"
-  echo "  2. Create a key, name it 'LP Generator'"
-  echo "  3. Copy the key (starts with sk-ant-)"
-  echo "  4. Paste below and press Enter"
-  echo ""
-  printf "  Anthropic API key: "
-  read -r ANTHROPIC_KEY
-  if [[ "$ANTHROPIC_KEY" != sk-ant-* ]]; then
-    warn "Key doesn't start with sk-ant- — saving anyway, edit $ENV_FILE later if wrong."
-  fi
+echo ""
+echo -e "  ${BOLD}HubSpot Client Secret${NC}  (paste the value Filipe sent you on Slack)"
+printf "  > "
+read -r HS_CLIENT_SECRET
+
+echo ""
+echo -e "  ${BOLD}Auth Secret${NC}  (paste the value Filipe sent you on Slack)"
+printf "  > "
+read -r AUTH_SECRET
+
+if [ -z "$HS_CLIENT_SECRET" ] || [ -z "$AUTH_SECRET" ]; then
+  error "Both shared secrets are required."
+  error "Ask Filipe to re-send them, then run the installer again."
+  exit 1
 fi
 
-# ─── Step 4: OneDrive detection ───────────────────────────────────────────────
-section "[4/6]" "Detecting shared OneDrive folder..."
+# ─── Step 6: OneDrive folder ──────────────────────────────────────────────────
+section "[6/8]" "Detecting OneDrive folder..."
 
 ONEDRIVE_PATH=""
-# Reuse existing setting if it's still valid
-if [ -f "$ENV_FILE" ]; then
-  EXISTING_OD=$(grep -E '^ONEDRIVE_PATH=' "$ENV_FILE" | sed 's/^ONEDRIVE_PATH=//' || true)
-  if [ -n "$EXISTING_OD" ] && [ -d "$EXISTING_OD" ]; then
-    ONEDRIVE_PATH="$EXISTING_OD"
-    log "Reusing existing OneDrive path: $ONEDRIVE_PATH"
+for candidate in \
+  "$HOME/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents" \
+  "$HOME/OneDrive - LATIGID LDA/MCP Claude - Documents" \
+  "$HOME/OneDrive/MCP Claude - Documents"; do
+  if [ -d "$candidate" ]; then
+    ONEDRIVE_PATH="$candidate"
+    log "Found: $ONEDRIVE_PATH"
+    break
   fi
-fi
+done
 
-# Auto-detect if not reused
 if [ -z "$ONEDRIVE_PATH" ]; then
-  for candidate in \
-    "$HOME/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents" \
-    "$HOME/OneDrive - LATIGID LDA/MCP Claude - Documents" \
-    "$HOME/OneDrive/MCP Claude - Documents"; do
-    if [ -d "$candidate" ]; then
-      echo -e "  Found: ${BOLD}$candidate${NC}"
-      read -p "  Use this folder? [Y/n] " confirm
-      if [[ "${confirm:-Y}" =~ ^[Yy]$ ]]; then
-        ONEDRIVE_PATH="$candidate"
-        break
-      fi
-    fi
-  done
-fi
-
-# Manual entry fallback
-if [ -z "$ONEDRIVE_PATH" ]; then
-  warn "OneDrive folder not found automatically."
+  warn "OneDrive folder not auto-detected."
   echo "  Drag your 'MCP Claude - Documents' folder from Finder into this Terminal,"
   echo "  then press Enter:"
   printf "  > "
@@ -128,19 +170,10 @@ if [ -z "$ONEDRIVE_PATH" ]; then
     error "Make sure OneDrive is synced and re-run the installer."
     exit 1
   fi
-fi
-log "OneDrive path: $ONEDRIVE_PATH"
-
-# Warn about missing subfolders (non-fatal — they may still be syncing)
-MISSING=()
-for f in lp-theme-generic lp-theme-programme client-images generated-themes; do
-  [ -d "$ONEDRIVE_PATH/$f" ] || MISSING+=("$f")
-done
-if [ ${#MISSING[@]} -gt 0 ]; then
-  warn "Missing subfolders (OneDrive may still be syncing): ${MISSING[*]}"
+  log "OneDrive path set"
 fi
 
-# Recreate symlinks (idempotent)
+# Symlink the four shared folders into the install dir
 for f in lp-theme-generic lp-theme-programme generated-themes client-images; do
   LINK="$INSTALL_DIR/$f"
   TARGET="$ONEDRIVE_PATH/$f"
@@ -148,29 +181,21 @@ for f in lp-theme-generic lp-theme-programme generated-themes client-images; do
   if [ -d "$TARGET" ]; then
     ln -s "$TARGET" "$LINK"
     log "Linked $f → OneDrive"
+  else
+    warn "$f not in OneDrive yet — re-run the installer after sync completes"
   fi
 done
 
-# ─── Step 5: Write .env ───────────────────────────────────────────────────────
-section "[5/6]" "Writing $ENV_FILE..."
-
-# Preserve existing secrets if already set; otherwise placeholder
-HS_CLIENT_SECRET="REPLACE_WITH_SECRET"
-AUTH_SECRET="REPLACE_WITH_SECRET"
-if [ -f "$ENV_FILE" ]; then
-  EXISTING_HS=$(grep -E '^HS_CLIENT_SECRET=' "$ENV_FILE" | sed 's/^HS_CLIENT_SECRET=//' || true)
-  EXISTING_AUTH=$(grep -E '^AUTH_SECRET=' "$ENV_FILE" | sed 's/^AUTH_SECRET=//' || true)
-  [ -n "$EXISTING_HS" ]   && HS_CLIENT_SECRET="$EXISTING_HS"
-  [ -n "$EXISTING_AUTH" ] && AUTH_SECRET="$EXISTING_AUTH"
-fi
+# ─── Step 7: Write .env + configure Claude Desktop ────────────────────────────
+section "[7/8]" "Writing configuration..."
 
 cat > "$ENV_FILE" <<EOF
 # Latigid LP Generator — Environment Configuration
-# Auto-generated by installer. Do not edit unless instructed.
+# Auto-generated by install.sh
 
-# HubSpot OAuth App (shared)
-HS_APP_ID=37936322
-HS_CLIENT_ID=891cdadd-e450-44b7-9c36-c6e0166e7825
+# HubSpot OAuth App (April 2026)
+HS_APP_ID=$HS_APP_ID
+HS_CLIENT_ID=$HS_CLIENT_ID
 HS_CLIENT_SECRET=$HS_CLIENT_SECRET
 HS_REDIRECT_URI=https://auth.latigid.dev/oauth/callback
 
@@ -188,63 +213,68 @@ ANTHROPIC_API_KEY=$ANTHROPIC_KEY
 ONEDRIVE_PATH=$ONEDRIVE_PATH
 EOF
 chmod 600 "$ENV_FILE"
-log ".env written ($(wc -l < "$ENV_FILE" | tr -d ' ') lines)"
-
-# ─── Step 6: Claude Desktop config ────────────────────────────────────────────
-section "[6/6]" "Configuring Claude Desktop..."
+log ".env written"
 
 mkdir -p "$(dirname "$CLAUDE_CONFIG")"
 [ -f "$CLAUDE_CONFIG" ] && cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.bak" && log "Backed up existing Claude config"
 
 node -e "
 const fs = require('fs');
-const configPath = process.argv[1];
-let config = {};
-try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
-config.mcpServers = config.mcpServers || {};
-config.mcpServers['hs-lp-generator'] = {
-  command: 'node',
-  args: ['$INSTALL_DIR/index.js']
-};
-fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+const p = process.argv[1];
+let c = {};
+try { c = JSON.parse(fs.readFileSync(p, 'utf8')); } catch {}
+c.mcpServers = c.mcpServers || {};
+c.mcpServers['hs-lp-generator'] = { command: 'node', args: ['$INSTALL_DIR/index.js'] };
+fs.writeFileSync(p, JSON.stringify(c, null, 2));
 " "$CLAUDE_CONFIG"
 log "Claude Desktop configured"
 
-# ─── Final validation ─────────────────────────────────────────────────────────
-section "Validation" "Syntax-checking server..."
 if (cd "$INSTALL_DIR" && node --check index.js 2>/dev/null); then
   log "index.js syntax OK"
 else
-  warn "index.js failed syntax check — try running the installer again"
+  warn "index.js failed syntax check — tell Filipe"
+fi
+
+# ─── Step 8: Restart Claude Desktop ───────────────────────────────────────────
+section "[8/8]" "Restarting Claude Desktop..."
+
+if pgrep -x "Claude" >/dev/null; then
+  osascript -e 'tell application "Claude" to quit' 2>/dev/null || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    pgrep -x "Claude" >/dev/null || break
+    sleep 1
+  done
+  pkill -x "Claude" 2>/dev/null || true
+  sleep 1
+  log "Claude Desktop quit"
+else
+  log "Claude Desktop wasn't running"
+fi
+
+if open -a "Claude" 2>/dev/null; then
+  log "Claude Desktop launched"
+else
+  warn "Could not auto-launch Claude — open it manually from Applications."
 fi
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 header "Installation complete 🎉"
 
-NEEDS_SECRETS=0
-[ "$HS_CLIENT_SECRET" = "REPLACE_WITH_SECRET" ] && NEEDS_SECRETS=1
-[ "$AUTH_SECRET" = "REPLACE_WITH_SECRET" ]      && NEEDS_SECRETS=1
-
-if [ "$NEEDS_SECRETS" -eq 1 ]; then
-  echo "  ${BOLD}Next steps:${NC}"
-  echo ""
-  echo "  1. ${BOLD}Get the shared secrets from Filipe (Slack)${NC} and update:"
-  echo "     $ENV_FILE"
-  echo "     Fill in: HS_CLIENT_SECRET and AUTH_SECRET"
-  echo ""
-  echo "  2. ${BOLD}Restart Claude Desktop${NC} (Cmd+Q, then reopen)"
-  echo ""
-  echo "  3. ${BOLD}Connect HubSpot${NC} — ask Claude:"
-  echo -e "     ${GREEN}\"List the themes in portal 2662575\"${NC}"
-  echo "     Claude will open the auth page automatically."
-else
-  echo -e "  ${BOLD}Restart Claude Desktop${NC} (Cmd+Q, then reopen) to load the changes."
-fi
-
+echo -e "  ${BOLD}Final step:${NC} Connect your HubSpot portal."
 echo ""
-echo "  ${BOLD}Available tools:${NC} list_themes, get_forms, generate_lp, upload_theme,"
-echo "  create_page, update_page, get_page, update_page_content, upload_image,"
-echo "  scan_images, search_stock_image, analyse_wireframe, web_search, write_file,"
-echo "  list_emails, get_email, create_email, update_email_content"
+echo -e "  1. Visit: ${GREEN}https://auth.latigid.dev${NC}"
+echo "     Click 'Connect HubSpot Portal' for each portal you need."
 echo ""
-read -p "  Press Enter to close..."
+echo -e "  2. In Claude Desktop, ask:"
+echo -e "     ${GREEN}\"List the themes in portal 2662575\"${NC}"
+echo ""
+echo -e "  ${BOLD}Available tools:${NC}"
+echo "    list_themes         get_forms           generate_lp"
+echo "    upload_theme        create_page         update_page"
+echo "    get_page            update_page_content upload_image"
+echo "    scan_images         search_stock_image  analyse_wireframe"
+echo "    web_search          write_file"
+echo "    list_emails         get_email           create_email"
+echo "    update_email_content"
+echo ""
+read -r -p "  Press Enter to close..." _

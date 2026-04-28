@@ -262,6 +262,5 @@ Format: `[YYYY-MM-DD HH:MM:SS] username | tool_name | key:value pairs`
 
 ## Updating the toolset
 
-- **New install**: run `Install LP Generator.command`
-- **Existing install / get latest code**: run `Update LP Generator.command`
-- **After moving to OneDrive for the first time**: run `node scripts/patch-onedrive.mjs` then restart Claude Desktop
+- **New install**: receive `LP-Generator-Installer.pkg` from Filipe and double-click it. Have your two shared secrets ready (sent on Slack: HubSpot Client Secret + Auth Secret) plus a personal Anthropic API key (`console.anthropic.com`). The installer handles Node, the repo clone, Claude Desktop config, and the restart.
+- **Existing install / get latest code**: run `Update LP Generator.command` from `~/.latigid/hs-lp-generator/`.

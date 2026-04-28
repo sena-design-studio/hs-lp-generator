@@ -1,0 +1,16 @@
+#!/bin/bash
+# Runs as root before .pkg files are placed.
+# Wipes any prior install so the new install starts from a clean slate.
+
+USER_NAME=$(stat -f %Su /dev/console)
+USER_HOME=$(eval echo ~"$USER_NAME")
+
+# Remove old install if present
+if [ -d "$USER_HOME/.latigid/hs-lp-generator" ]; then
+  rm -rf "$USER_HOME/.latigid/hs-lp-generator"
+fi
+
+# Clean any leftover installer payload from a previous .pkg run
+rm -rf /private/var/tmp/lp-generator-installer 2>/dev/null || true
+
+exit 0

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Latigid LP Generator</title>
+    <organization>dev.latigid</organization>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="dev.latigid.lp-generator-installer"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="dev.latigid.lp-generator-installer" visible="false">
+        <pkg-ref id="dev.latigid.lp-generator-installer"/>
+    </choice>
+    <pkg-ref id="dev.latigid.lp-generator-installer" version="1.0.0" auth="root">component.pkg</pkg-ref>
+</installer-gui-script>
