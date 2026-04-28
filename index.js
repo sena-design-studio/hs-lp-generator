@@ -1105,6 +1105,95 @@ server.tool(
   }
 );
 
+// ─── TOOL: read_file ──────────────────────────────────────────────────────────
+server.tool(
+  "read_file",
+  "Read a UTF-8 text file from the local filesystem. Use for HubSpot module files (HTML/CSS/JSON) before modifying them. Not suitable for binary files.",
+  {
+    file_path: z.string().describe("Absolute path to the file to read"),
+  },
+  async ({ file_path }) => {
+    try {
+      if (!fs.existsSync(file_path)) {
+        throw new Error(`File not found: ${file_path}`);
+      }
+      const stats = fs.statSync(file_path);
+      if (stats.isDirectory()) {
+        throw new Error(`Path is a directory, not a file: ${file_path}. Use list_files instead.`);
+      }
+      const content = fs.readFileSync(file_path, "utf8");
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            path: file_path,
+            size_bytes: stats.size,
+            content,
+          }),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ error: err.message }) }],
+      };
+    }
+  }
+);
+
+// ─── TOOL: list_files ─────────────────────────────────────────────────────────
+server.tool(
+  "list_files",
+  "List entries (files, directories, symlinks) in a local filesystem directory. Use to discover module files inside a theme folder.",
+  {
+    folder_path: z.string().describe("Absolute path to the directory to list"),
+  },
+  async ({ folder_path }) => {
+    try {
+      if (!fs.existsSync(folder_path)) {
+        throw new Error(`Folder not found: ${folder_path}`);
+      }
+      const stats = fs.statSync(folder_path);
+      if (!stats.isDirectory()) {
+        throw new Error(`Path is not a directory: ${folder_path}`);
+      }
+      const entries = fs.readdirSync(folder_path, { withFileTypes: true })
+        .map((e) => {
+          let type = "file";
+          if (e.isDirectory()) type = "directory";
+          else if (e.isSymbolicLink()) type = "symlink";
+          const entry = { name: e.name, type };
+          if (type === "file") {
+            try {
+              const s = fs.statSync(path.join(folder_path, e.name));
+              entry.size_bytes = s.size;
+            } catch {}
+          }
+          return entry;
+        })
+        .sort((a, b) => {
+          if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            path: folder_path,
+            count: entries.length,
+            entries,
+          }),
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ error: err.message }) }],
+      };
+    }
+  }
+);
+
 // ─── START ────────────────────────────────────────────────────────────────────
 const transport = new StdioServerTransport();
 await server.connect(transport);

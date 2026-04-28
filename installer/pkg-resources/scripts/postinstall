@@ -3,18 +3,22 @@
 # Opens Terminal as the actual user and runs install.sh from the payload.
 
 USER_NAME=$(stat -f %Su /dev/console)
-SETUP_SCRIPT="/private/var/tmp/lp-generator-installer/install.sh"
+INSTALL_BASE="/private/var/tmp/lp-generator-installer"
+SETUP_SCRIPT="$INSTALL_BASE/install.sh"
 
 if [ ! -f "$SETUP_SCRIPT" ]; then
   echo "ERROR: $SETUP_SCRIPT not found" >&2
   exit 1
 fi
 
-chmod +x "$SETUP_SCRIPT"
-chown "$USER_NAME":staff "$SETUP_SCRIPT" 2>/dev/null || true
+# Ensure the user can traverse the directory and read the script.
+# pkgbuild creates the install location with default root permissions; without
+# this, bash run as the user gets "Permission denied" when trying to read the
+# script. `a+rX` adds read for everyone and execute on directories only.
+chmod -R a+rX "$INSTALL_BASE"
+chown -R "$USER_NAME":staff "$INSTALL_BASE" 2>/dev/null || true
 
 # Open Terminal as the user with our setup script.
-# Drop privileges via sudo -u so Terminal launches in the user's session.
 sudo -u "$USER_NAME" osascript <<APPLESCRIPT
 tell application "Terminal"
     activate

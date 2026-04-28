@@ -147,6 +147,8 @@ fi
 section "[6/8]" "Detecting OneDrive folder..."
 
 ONEDRIVE_PATH=""
+
+# Auto-detect: try the common paths first
 for candidate in \
   "$HOME/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents" \
   "$HOME/OneDrive - LATIGID LDA/MCP Claude - Documents" \
@@ -158,16 +160,35 @@ for candidate in \
   fi
 done
 
+# Glob fallback: any OneDrive-<tenant>/MCP Claude - Documents under CloudStorage
+if [ -z "$ONEDRIVE_PATH" ]; then
+  for candidate in "$HOME"/Library/CloudStorage/OneDrive-*/"MCP Claude - Documents"; do
+    if [ -d "$candidate" ]; then
+      ONEDRIVE_PATH="$candidate"
+      log "Found: $ONEDRIVE_PATH"
+      break
+    fi
+  done
+fi
+
+# Manual entry fallback
 if [ -z "$ONEDRIVE_PATH" ]; then
   warn "OneDrive folder not auto-detected."
   echo "  Drag your 'MCP Claude - Documents' folder from Finder into this Terminal,"
   echo "  then press Enter:"
   printf "  > "
   read -r raw_path
-  ONEDRIVE_PATH=$(echo "$raw_path" | sed "s/^[[:space:]'\"]*//;s/[[:space:]'\"]*$//")
+
+  # Drag-from-Finder produces backslash-escaped paths (e.g. MCP\ Claude\ -\ Documents).
+  # Strip surrounding whitespace/quotes, then unescape any \<char> sequences.
+  trimmed=$(echo "$raw_path" | sed "s/^[[:space:]'\"]*//;s/[[:space:]'\"]*$//")
+  ONEDRIVE_PATH=$(printf '%s' "$trimmed" | sed 's/\\\(.\)/\1/g')
+
   if [ ! -d "$ONEDRIVE_PATH" ]; then
     error "Folder not found: $ONEDRIVE_PATH"
-    error "Make sure OneDrive is synced and re-run the installer."
+    error "  (raw input: $raw_path)"
+    error "If OneDrive is fully synced, copy the path from Finder → Get Info"
+    error "and paste it instead of dragging."
     exit 1
   fi
   log "OneDrive path set"
