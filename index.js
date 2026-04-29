@@ -5,6 +5,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execFileSync } from "child_process";
 import { getValidAccessToken, listAuthorisedPortals } from "./auth.js";
 import { generateTheme, collectFiles } from "./lp-theme-generic/generate.js";
 
@@ -14,6 +15,15 @@ const server = new McpServer({
   name: "hs-lp-generator",
   version: "0.1.0",
 });
+
+// Map a `page_type` parameter to the HubSpot Pages API resource segment.
+// Accepts "landing" (default) or "site". Throws on anything else.
+function pagesResource(page_type) {
+  const t = (page_type || "landing").toLowerCase();
+  if (t === "landing" || t === "landing-page" || t === "lp") return "landing-pages";
+  if (t === "site" || t === "site-page" || t === "website" || t === "website-page") return "site-pages";
+  throw new Error(`Invalid page_type: "${page_type}". Must be "landing" or "site".`);
+}
 
 server.tool(
   "write_file",
@@ -296,16 +306,18 @@ server.tool(
 // ─── TOOL: create_page ────────────────────────────────────────────────────────
 server.tool(
   "create_page",
-  "Create a draft landing page in HubSpot using the uploaded theme template",
+  "Create a draft page in HubSpot using the uploaded theme template. Supports landing pages and site (website) pages.",
   {
     portal_id:  z.string().describe("HubSpot portal ID"),
     page_name:  z.string().describe("Internal name for the page in HubSpot"),
     page_slug:  z.string().describe("URL slug, e.g. /campaign-q3"),
     theme_name: z.string().describe("Theme folder name as uploaded to HubSpot"),
+    page_type:  z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
   },
-  async ({ portal_id, page_name, page_slug, theme_name }) => {
+  async ({ portal_id, page_name, page_slug, theme_name, page_type }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const resource = pagesResource(page_type);
       const templatePath = `${theme_name}/templates/layout/base.html`;
 
       const body = {
@@ -316,7 +328,7 @@ server.tool(
       };
 
       const res = await fetch(
-        "https://api.hubapi.com/cms/v3/pages/landing-pages",
+        `https://api.hubapi.com/cms/v3/pages/${resource}`,
         {
           method: "POST",
           headers: {
@@ -339,6 +351,7 @@ server.tool(
             status: "ok",
             page_id: page.id,
             page_name: page.name,
+            page_type: resource === "site-pages" ? "site" : "landing",
             slug: page.slug,
             draft_url: draftUrl,
           }),
@@ -558,19 +571,21 @@ server.tool(
 // ─── TOOL: update_page ────────────────────────────────────────────────────────
 server.tool(
   "update_page",
-  "Update an existing draft landing page in HubSpot to use a new theme template",
+  "Update an existing draft page in HubSpot to use a new theme template. Supports landing pages and site (website) pages.",
   {
     portal_id:  z.string().describe("HubSpot portal ID"),
     page_id:    z.string().describe("HubSpot page ID to update"),
     theme_name: z.string().describe("Theme folder name as uploaded to HubSpot"),
+    page_type:  z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
   },
-  async ({ portal_id, page_id, theme_name }) => {
+  async ({ portal_id, page_id, theme_name, page_type }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const resource = pagesResource(page_type);
       const templatePath = `${theme_name}/templates/layout/base.html`;
 
       const res = await fetch(
-        `https://api.hubapi.com/cms/v3/pages/landing-pages/${page_id}`,
+        `https://api.hubapi.com/cms/v3/pages/${resource}/${page_id}`,
         {
           method: "PATCH",
           headers: {
@@ -593,6 +608,7 @@ server.tool(
             status: "ok",
             page_id: page.id,
             page_name: page.name,
+            page_type: resource === "site-pages" ? "site" : "landing",
             draft_url: draftUrl,
           }),
         }],
@@ -748,16 +764,18 @@ Return ONLY a valid JSON array. No explanation, no markdown, no backticks.`;
 // ─── TOOL: get_page ───────────────────────────────────────────────────────────
 server.tool(
   "get_page",
-  "Get the current content and module field values of an existing HubSpot landing page",
+  "Get the current content and module field values of an existing HubSpot page. Supports landing pages and site (website) pages.",
   {
     portal_id: z.string().describe("HubSpot portal ID"),
     page_id: z.string().describe("HubSpot page ID"),
+    page_type: z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
   },
-  async ({ portal_id, page_id }) => {
+  async ({ portal_id, page_id, page_type }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const resource = pagesResource(page_type);
       const res = await fetch(
-        `https://api.hubapi.com/cms/v3/pages/landing-pages/${page_id}?archived=false`,
+        `https://api.hubapi.com/cms/v3/pages/${resource}/${page_id}?archived=false`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
@@ -770,6 +788,7 @@ server.tool(
             name: page.name,
             slug: page.slug,
             state: page.state,
+            page_type: resource === "site-pages" ? "site" : "landing",
             template: page.templatePath,
             updated: page.updatedAt,
             draft_url: `https://app.hubspot.com/pages/${portal_id}/editor/${page.id}`,
@@ -788,10 +807,11 @@ server.tool(
 // ─── TOOL: update_page_content ────────────────────────────────────────────────
 server.tool(
   "update_page_content",
-  "Update the content of an existing HubSpot landing page without creating a new page. Pass empty string to skip a field.",
+  "Update the content of an existing HubSpot page without creating a new one. Supports landing pages and site (website) pages. Pass empty string to skip a field.",
   {
     portal_id: z.string().describe("HubSpot portal ID"),
     page_id: z.string().describe("HubSpot page ID to update"),
+    page_type: z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
     name: z.string().describe("New page name, or empty string to skip"),
     html_title: z.string().describe("New SEO title, or empty string to skip"),
     meta_description: z.string().describe("New meta description, or empty string to skip"),
@@ -799,9 +819,10 @@ server.tool(
     template_path: z.string().describe("New template path, or empty string to skip"),
     widgets: z.string().describe("JSON string of module widget overrides, or empty string to skip"),
   },
-  async ({ portal_id, page_id, name, html_title, meta_description, slug, template_path, widgets }) => {
+  async ({ portal_id, page_id, page_type, name, html_title, meta_description, slug, template_path, widgets }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const resource = pagesResource(page_type);
       const body = {};
       if (name) body.name = name;
       if (html_title) body.htmlTitle = html_title;
@@ -814,7 +835,7 @@ server.tool(
       }
       if (Object.keys(body).length === 0) throw new Error("No fields provided.");
       const res = await fetch(
-        `https://api.hubapi.com/cms/v3/pages/landing-pages/${page_id}`,
+        `https://api.hubapi.com/cms/v3/pages/${resource}/${page_id}`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -828,6 +849,7 @@ server.tool(
           status: "ok",
           page_id: page.id,
           page_name: page.name,
+          page_type: resource === "site-pages" ? "site" : "landing",
           slug: page.slug,
           draft_url: `https://app.hubspot.com/pages/${portal_id}/editor/${page.id}`,
           updated_fields: Object.keys(body),
@@ -1190,6 +1212,122 @@ server.tool(
       return {
         content: [{ type: "text", text: JSON.stringify({ error: err.message }) }],
       };
+    }
+  }
+);
+
+// ─── TOOL: check_for_updates ──────────────────────────────────────────────────
+server.tool(
+  "check_for_updates",
+  "Check whether the LP Generator MCP server has a newer version available on GitHub. Returns the current SHA, latest SHA on origin/main, and a list of new commits if behind. Call this only when the user explicitly asks to check for updates.",
+  {},
+  async () => {
+    try {
+      const installDir = __dirname;
+      if (!fs.existsSync(path.join(installDir, ".git"))) {
+        throw new Error(`Not a git checkout: ${installDir}`);
+      }
+      const run = (args) => execFileSync("git", args, { cwd: installDir, encoding: "utf8" }).trim();
+
+      const current = run(["rev-parse", "--short", "HEAD"]);
+      run(["fetch", "--quiet", "origin", "main"]);
+      const latest = run(["rev-parse", "--short", "origin/main"]);
+
+      if (current === latest) {
+        return { content: [{ type: "text", text: JSON.stringify({ status: "up_to_date", current }) }] };
+      }
+
+      const log = run(["log", "--oneline", "--no-decorate", `${current}..origin/main`]);
+      const commits = log.split("\n").filter(Boolean);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "update_available",
+            current,
+            latest,
+            commit_count: commits.length,
+            commits,
+            instructions: "If the user wants to apply the update, call the update_self tool. They will need to restart Claude Desktop afterwards.",
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: update_self ────────────────────────────────────────────────────────
+server.tool(
+  "update_self",
+  "Pull the latest version of the LP Generator MCP server from GitHub and refresh dependencies if package.json changed. After this runs the user MUST restart Claude Desktop (Cmd+Q, then reopen) to load the new code.",
+  {},
+  async () => {
+    try {
+      const installDir = __dirname;
+      if (!fs.existsSync(path.join(installDir, ".git"))) {
+        throw new Error(`Not a git checkout: ${installDir}`);
+      }
+      const runGit = (args) => execFileSync("git", args, { cwd: installDir, encoding: "utf8" }).trim();
+
+      const before = runGit(["rev-parse", "--short", "HEAD"]);
+      runGit(["fetch", "--quiet", "origin", "main"]);
+      const remote = runGit(["rev-parse", "--short", "origin/main"]);
+
+      if (before === remote) {
+        return {
+          content: [{ type: "text", text: JSON.stringify({ status: "already_up_to_date", current: before }) }],
+        };
+      }
+
+      // Check what's about to change so we know whether to reinstall deps
+      const changed = runGit(["diff", "--name-only", `${before}..origin/main`])
+        .split("\n").filter(Boolean);
+      const needsNpmInstall = changed.some((f) => /^package(-lock)?\.json$/.test(f));
+
+      // Apply
+      runGit(["pull", "--quiet", "origin", "main"]);
+      const after = runGit(["rev-parse", "--short", "HEAD"]);
+
+      let npm_install = "skipped";
+      if (needsNpmInstall) {
+        try {
+          execFileSync("npm", ["install", "--quiet"], { cwd: installDir, encoding: "utf8" });
+          npm_install = "ok";
+        } catch (e) {
+          npm_install = `failed: ${e.stderr?.toString() || e.message}`;
+        }
+      }
+
+      let syntax_check = "ok";
+      try {
+        execFileSync("node", ["--check", path.join(installDir, "index.js")], {
+          cwd: installDir,
+          encoding: "utf8",
+        });
+      } catch (e) {
+        syntax_check = `failed: ${e.stderr?.toString() || e.message}`;
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "updated",
+            from: before,
+            to: after,
+            files_changed: changed.length,
+            npm_install,
+            syntax_check,
+            restart_required: true,
+            instructions: "Restart Claude Desktop (Cmd+Q, then reopen) to load the new code.",
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
     }
   }
 );
