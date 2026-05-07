@@ -157,6 +157,7 @@ After the checks, report a one-line status:
 | `generate_email_template` | Generate a reusable email template locally (3 modes: from_brief / from_html / from_email) |
 | `upload_email_template` | Push a generated template folder to the HubSpot Design Manager |
 | `list_email_templates` | List email templates already in the Design Manager |
+| `list_business_units` | List business units in the portal — required for `business_unit_id` on `create_email` (Marketing Hub Enterprise portals) |
 
 ---
 
@@ -265,11 +266,61 @@ The MCP can both *create* new reusable email templates and *use* them when creat
 3. `upload_email_template`
 4. `create_email` referencing the new `template_path`
 
+### Iterating on an existing draft email
+
+`update_email_content` supports full mutation of a draft, no need to recreate. Common patterns:
+
+**Tweak metadata only** (subject, preview, from):
+```
+update_email_content(portal_id, email_id, subject="New subject", preview_text="New preview")
+```
+
+**Edit the template-driven fields** (headline, body, CTA, etc.) via `widget_overrides` — pass a JSON string keyed by widget name. The tool **auto-merges** your overrides with the email's existing widgets — you only need to send the delta. Previously-set widgets that you don't mention are preserved untouched. (Under the hood: HubSpot's API has REPLACE semantics on `content.widgets`, so this tool reads existing widgets and merges before PATCHing.) To actively *remove* an override, send the widget with `{"deleted_at": <ms timestamp>}`.
+
+Widget names match the names in the template's HubL `{% text %}` / `{% rich_text %}` / `{% image %}` blocks. Value shape depends on widget type:
+
+- text widgets: `{"body": {"value": "..."}}`
+- rich_text widgets: `{"body": {"html": "<p>...</p>"}}`
+- image widgets: `{"body": {"src": "https://...", "alt": "..."}}`
+
+Example for the `email-template-generic` base (which has widgets: `logo`, `hero_image`, `headline`, `body`, `cta_label`, `cta_url`, `footer_text`):
+```
+update_email_content(
+  portal_id,
+  email_id,
+  widget_overrides='{"headline":{"body":{"value":"Updated headline"}},"body":{"body":{"html":"<p>Updated paragraph</p>"}},"cta_label":{"body":{"value":"Try it now"}}}'
+)
+```
+
+**Switch the underlying template** with `template_path`:
+```
+update_email_content(portal_id, email_id, template_path="email-templates/cloudtech-v2/template.html")
+```
+
+`html_body` is mutually exclusive with `template_path` and `widget_overrides` — passing `html_body` abandons the template association and turns the email into a freeform HTML email. Avoid unless that's intentional.
+
+**Recommended discovery flow before patching**: call `get_email` first. It now returns the current `template_path` and `widgets` blob, so Claude can see the existing widget structure and produce a correct override JSON without guessing.
+
+### Iterating on the template itself
+
+Different from iterating on an email — this updates the *source template* in the Design Manager. New emails created from the template afterwards pick up the changes; **existing emails based on it do not** (HubSpot snapshots the template at email-creation time).
+
+Workflow:
+1. Edit `OneDrive/email-template-generic/template.html` directly (or pass a fresh brand+content brief to `generate_email_template` mode=`from_brief`)
+2. `upload_email_template` to the same `template_name` to overwrite the Design Manager copy
+3. Future `create_email` calls pointing at that `template_path` use the new version
+
 ### Base layout
 
 Path: `/Users/[username]/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents/email-template-generic/`
 
 A single-file table-based 600px-wide HubL template covering: header logo, optional hero image, headline, body, CTA button (label + URL), footer with required CAN-SPAM block (`{{ unsubscribe_link }}`, `{{ subscription_preferences_url }}`, company address). Edit the file directly to evolve the base layout for the whole team.
+
+### Notes on portal-specific gotchas
+
+- The Design Manager template-type annotation must be `templateType: email` (verified working on portal 2662575). Numeric values (`2`) and `email_base_template` are rejected by the Source Code API even though they appear in some HubSpot docs.
+- Marketing Hub Enterprise portals (which support multiple business units) require `business_unit_id` on `create_email`. Use `list_business_units` to discover the IDs. On portals without business units, leave the parameter empty — the API ignores it.
+- `from_email` must be from a domain that's verified in the portal's email sending settings. The demo portal's verified domain is `hubspot-demo-account.latigid.pt`.
 
 ---
 

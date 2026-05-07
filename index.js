@@ -993,6 +993,9 @@ server.tool(
               from_email: e.fromEmail,
               html_body: e.content?.body || "",
               plain_text_body: e.content?.plainTextBody || "",
+              template_path: e.content?.templatePath || "",
+              widgets: e.content?.widgets || {},
+              business_unit_id: e.businessUnitId ?? null,
               campaign_id: e.campaignId || null,
               updated: e.updatedAt,
               created: e.createdAt,
@@ -1021,8 +1024,9 @@ server.tool(
     plain_text_body: z.string().default("").describe("Plain text fallback body"),
     template_path:   z.string().default("").describe("Design Manager path to an email template (e.g. 'email-templates/cloudtech-generic/template.html'). Use list_email_templates to discover. Leave empty when supplying html_body."),
     campaign_id:     z.string().default("").describe("Optional HubSpot campaign ID, or empty string to skip"),
+    business_unit_id: z.string().default("").describe("Required for portals with Marketing Hub Enterprise (multiple business units). Use list_business_units to discover. Empty string to skip."),
   },
-  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, template_path, campaign_id }) => {
+  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, template_path, campaign_id, business_unit_id }) => {
     try {
       // Mutual exclusivity: exactly one of html_body / template_path
       const hasHtml = Boolean(html_body);
@@ -1048,6 +1052,7 @@ server.tool(
         fromEmail: from_email,
         content: contentBlock,
         ...(campaign_id ? { campaignId: campaign_id } : {}),
+        ...(business_unit_id ? { businessUnitId: Number(business_unit_id) } : {}),
       };
 
       const res = await fetch(
@@ -1083,7 +1088,7 @@ server.tool(
 // ─── TOOL: update_email_content ───────────────────────────────────────────────
 server.tool(
   "update_email_content",
-  "Update the content or settings of an existing HubSpot draft email. Pass empty string to skip a field.",
+  "Update the content or settings of an existing HubSpot draft email. Pass empty string to skip a field. To edit fields of a template-based email (headline, body, CTA, etc. defined as widgets in the template), pass widget_overrides as a JSON string mapping widget name → override object.",
   {
     portal_id:       z.string().describe("HubSpot portal ID"),
     email_id:        z.string().describe("HubSpot email ID to update"),
@@ -1092,11 +1097,20 @@ server.tool(
     preview_text:    z.string().describe("New preview/preheader text, or empty string to skip"),
     from_name:       z.string().describe("New sender display name, or empty string to skip"),
     from_email:      z.string().describe("New sender email address, or empty string to skip"),
-    html_body:       z.string().describe("New HTML body, or empty string to skip"),
+    html_body:       z.string().describe("New HTML body, or empty string to skip. Mutually exclusive with widget_overrides — use one or the other depending on whether the email is freeform or template-based."),
     plain_text_body: z.string().describe("New plain text body, or empty string to skip"),
+    business_unit_id: z.string().default("").describe("New business unit ID, or empty string to skip. Use list_business_units to discover valid IDs."),
+    template_path:   z.string().default("").describe("New Design Manager template path (e.g. 'email-templates/cloudtech-generic/template.html') to switch the email's underlying template. Empty string to skip. Mutually exclusive with html_body."),
+    widget_overrides: z.string().default("").describe("JSON string of widget overrides for template-based emails, or empty string to skip. Auto-merges with the email's existing widgets (you only need to send the delta — previously-set overrides are preserved). Shape: {\"widgetName\":{\"body\":{\"value\":\"new text\"}}, ...}. For text widgets use {\"body\":{\"value\":\"...\"}}; for rich_text use {\"body\":{\"html\":\"<p>...</p>\"}}; for image use {\"body\":{\"src\":\"https://...\",\"alt\":\"...\"}}. Widget names match the template's HubL widget blocks (e.g. 'headline', 'body', 'cta_label', 'cta_url', 'logo', 'hero_image', 'footer_text'). To actively remove an override, send the widget with {\"deleted_at\": <ms timestamp>}."),
   },
-  async ({ portal_id, email_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body }) => {
+  async ({ portal_id, email_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, business_unit_id, template_path, widget_overrides }) => {
     try {
+      // Mutual exclusivity guard: html_body abandons template association,
+      // template_path/widget_overrides keep it. html_body must stand alone.
+      if (html_body && (template_path || widget_overrides)) {
+        throw new Error("Provide either 'html_body' OR 'template_path'/'widget_overrides', not both. html_body replaces the rendered HTML; template_path and widget_overrides patch the template-based email.");
+      }
+
       const token = await getValidAccessToken(portal_id);
 
       const payload = {};
@@ -1105,10 +1119,40 @@ server.tool(
       if (preview_text) payload.previewText = preview_text;
       if (from_name)    payload.fromName    = from_name;
       if (from_email)   payload.fromEmail   = from_email;
+      if (business_unit_id) payload.businessUnitId = Number(business_unit_id);
 
       const content = {};
       if (html_body)       content.body          = html_body;
       if (plain_text_body) content.plainTextBody = plain_text_body;
+      if (template_path)   content.templatePath  = template_path;
+      if (widget_overrides) {
+        let parsed;
+        try { parsed = JSON.parse(widget_overrides); }
+        catch { throw new Error("widget_overrides must be valid JSON"); }
+        if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) {
+          throw new Error("widget_overrides must be a JSON object keyed by widget name");
+        }
+
+        // HubSpot's PATCH on content.widgets is REPLACE semantics — any widget
+        // not present in the new blob is soft-deleted (gets a deleted_at flag).
+        // Auto-merge: fetch existing widgets and merge with incoming overrides
+        // so callers can safely send just the delta. To actively remove a
+        // widget, send it with {"deleted_at": <ms timestamp>} explicitly.
+        const existingRes = await fetch(
+          `https://api.hubapi.com/marketing/v3/emails/${email_id}`,
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+        if (!existingRes.ok) {
+          throw new Error(`Failed to fetch existing email for widget merge: ${existingRes.status} ${await existingRes.text()}`);
+        }
+        const existing = await existingRes.json();
+        const existingWidgets = existing.content?.widgets || {};
+
+        // Shallow merge — incoming widget object replaces the matching
+        // existing one entirely. Widgets not mentioned in `parsed` are
+        // preserved as-is.
+        content.widgets = { ...existingWidgets, ...parsed };
+      }
       if (Object.keys(content).length) payload.content = content;
 
       if (Object.keys(payload).length === 0) throw new Error("No fields provided.");
@@ -1377,7 +1421,82 @@ server.tool(
 // ─── TOOL: list_email_templates ───────────────────────────────────────────────
 server.tool(
   "list_email_templates",
-  "List email templates available in the HubSpot Design Manager for the given portal. Returns top-level Design Manager folders that contain a template.html with an email_base_template metadata header.",
+  "List email templates available in the HubSpot Design Manager for the given portal. Probes top-level Design Manager folders for template.html and additionally expands any folder that looks like an email-template container (e.g. 'email-templates'). Returns folders whose template.html has the email metadata header (templateType: email | email_base_template | 2).",
+  {
+    portal_id: z.string().describe("HubSpot portal ID"),
+  },
+  async ({ portal_id }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+      const headers = { Authorization: `Bearer ${token}` };
+      const encodePath = (p) => p.split("/").map(encodeURIComponent).join("/");
+
+      async function getMeta(folderPath) {
+        const url = folderPath
+          ? `https://api.hubapi.com/cms/v3/source-code/published/metadata/${encodePath(folderPath)}`
+          : "https://api.hubapi.com/cms/v3/source-code/published/metadata/@root";
+        const res = await fetch(url, { headers });
+        if (!res.ok) return null;
+        return res.json();
+      }
+
+      async function probeTemplate(folderPath) {
+        const probe = `${folderPath}/template.html`;
+        const res = await fetch(
+          `https://api.hubapi.com/cms/v3/source-code/published/content/${encodePath(probe)}`,
+          { headers }
+        );
+        if (!res.ok) return null;
+        const text = await res.text();
+        if (!/templateType:\s*(?:email|email_base_template|2)\b/i.test(text)) return null;
+        const labelMatch = text.match(/label:\s*([^\n\r]+)/);
+        return {
+          folder: folderPath,
+          template_path: probe,
+          label: labelMatch ? labelMatch[1].trim() : folderPath.split("/").pop(),
+        };
+      }
+
+      // Step 1: list root children
+      const rootMeta = await getMeta("");
+      const rootChildren = rootMeta?.children || [];
+
+      // Step 2: identify "email-template containers" — folders whose names
+      // look like they hold email templates. We descend one level into these.
+      const containerNamePattern = /^(emails?|email[-_]?templates?|marketing[-_]?emails?)$/i;
+      const containerChildren = rootChildren.filter((c) => containerNamePattern.test(c));
+
+      // Step 3: expand containers in parallel to their direct children
+      const expandedFromContainers = (await Promise.all(
+        containerChildren.map(async (containerName) => {
+          const meta = await getMeta(containerName);
+          return (meta?.children || []).map((subName) => `${containerName}/${subName}`);
+        })
+      )).flat();
+
+      // Step 4: build the full probe list (top-level + container subfolders)
+      const candidates = [...rootChildren, ...expandedFromContainers];
+
+      // Step 5: probe everything in parallel
+      const hits = await Promise.all(candidates.map(probeTemplate));
+      const found = hits.filter(Boolean);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ status: "ok", portal_id, total: found.length, templates: found }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: list_business_units ────────────────────────────────────────────────
+server.tool(
+  "list_business_units",
+  "List business units configured in a HubSpot portal. Required when creating marketing emails on portals that have multiple business units (Marketing Hub Enterprise feature). Returns id + name pairs to feed into create_email's business_unit_id parameter. Resolves the OAuth token's user ID first, then queries the business-units API.",
   {
     portal_id: z.string().describe("HubSpot portal ID"),
   },
@@ -1385,41 +1504,64 @@ server.tool(
     try {
       const token = await getValidAccessToken(portal_id);
 
-      const rootRes = await fetch(
-        "https://api.hubapi.com/cms/v3/source-code/published/metadata/@root",
+      // Step 1: introspect the OAuth token to get user_id
+      const introRes = await fetch(
+        `https://api.hubapi.com/oauth/v1/access-tokens/${encodeURIComponent(token)}`
+      );
+      if (!introRes.ok) throw new Error(`OAuth introspection error: ${introRes.status} ${await introRes.text()}`);
+      const intro = await introRes.json();
+      const userId = intro.user_id;
+      if (!userId) throw new Error(`OAuth introspection returned no user_id: ${JSON.stringify(intro)}`);
+
+      // Step 2: list business units the OAuth user has access to
+      const res = await fetch(
+        `https://api.hubapi.com/business-units/v3/business-units/user/${userId}?limit=50`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!rootRes.ok) throw new Error(`HubSpot API error: ${rootRes.status} ${await rootRes.text()}`);
-      const rootData = await rootRes.json();
-      const candidates = rootData.children || [];
 
-      // Probe each top-level folder for a template.html with the email metadata header
-      const checks = await Promise.all(candidates.map(async (name) => {
-        const probePath = `${name}/template.html`;
-        const encoded = probePath.split("/").map(encodeURIComponent).join("/");
-        const res = await fetch(
-          `https://api.hubapi.com/cms/v3/source-code/published/content/${encoded}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) return null;
-        const text = await res.text();
-        if (/templateType:\s*email_base_template/i.test(text)) {
-          const labelMatch = text.match(/label:\s*([^\n\r]+)/);
+      // Graceful fallback: portal/token doesn't have the scope.
+      // Common cases:
+      //   1. Marketing Hub Enterprise required for business units feature
+      //   2. business_units_view.read scope not granted on this OAuth install
+      // In both cases the API returns 403 MISSING_SCOPES — we surface a clean
+      // status so callers (incl. create_email) can proceed without the param.
+      if (res.status === 403) {
+        const bodyText = await res.text();
+        let parsed = {};
+        try { parsed = JSON.parse(bodyText); } catch {}
+        if (parsed.category === "MISSING_SCOPES" || /MISSING_SCOPES|business_units_view\.read/.test(bodyText)) {
           return {
-            folder: name,
-            template_path: probePath,
-            label: labelMatch ? labelMatch[1].trim() : name,
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                status: "scope_not_granted",
+                portal_id,
+                user_id: userId,
+                missing_scopes: parsed?.errors?.[0]?.context?.requiredGranularScopes ?? ["business_units_view.read"],
+                hint: "The OAuth token for this portal does not include 'business_units_view.read'. Either the portal has no business units (no action needed — emails can be created without business_unit_id) or the auth-server's HS_SCOPES does not request it. To fix the latter: add business_units_view.read to HS_SCOPES on auth.latigid.dev and reconnect the portal.",
+              }),
+            }],
           };
         }
-        return null;
+      }
+
+      if (!res.ok) throw new Error(`HubSpot API error: ${res.status} ${await res.text()}`);
+      const data = await res.json();
+      const units = (data.results || []).map((u) => ({
+        id: u.id,
+        name: u.name,
+        is_default: !!u.isDefault,
       }));
-
-      const templates = checks.filter(Boolean);
-
       return {
         content: [{
           type: "text",
-          text: JSON.stringify({ status: "ok", portal_id, total: templates.length, templates }),
+          text: JSON.stringify({
+            status: "ok",
+            portal_id,
+            user_id: userId,
+            total: units.length,
+            business_units: units,
+          }),
         }],
       };
     } catch (err) {
