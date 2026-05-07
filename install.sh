@@ -194,8 +194,8 @@ if [ -z "$ONEDRIVE_PATH" ]; then
   log "OneDrive path set"
 fi
 
-# Symlink the four shared folders into the install dir
-for f in lp-theme-generic lp-theme-programme generated-themes client-images; do
+# Symlink the shared folders into the install dir
+for f in lp-theme-generic lp-theme-programme email-template-generic generated-themes generated-email-templates client-images; do
   LINK="$INSTALL_DIR/$f"
   TARGET="$ONEDRIVE_PATH/$f"
   if [ -L "$LINK" ] || [ -e "$LINK" ]; then rm -rf "$LINK"; fi
