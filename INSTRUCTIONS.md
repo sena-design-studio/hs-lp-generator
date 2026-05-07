@@ -150,6 +150,13 @@ After the checks, report a one-line status:
 | `list_files` | List files and folders in a local directory |
 | `check_for_updates` | Check GitHub for a newer version of the MCP server |
 | `update_self` | Pull the latest version + refresh deps (user must restart Claude Desktop) |
+| `list_emails` | List marketing emails in a portal |
+| `get_email` | Fetch a marketing email's full content |
+| `create_email` | Create a draft marketing email — accepts `html_body` OR `template_path` |
+| `update_email_content` | Patch an existing draft email's content/settings |
+| `generate_email_template` | Generate a reusable email template locally (3 modes: from_brief / from_html / from_email) |
+| `upload_email_template` | Push a generated template folder to the HubSpot Design Manager |
+| `list_email_templates` | List email templates already in the Design Manager |
 
 ---
 
@@ -227,6 +234,42 @@ Used for educational programme / MBA-style pages. Edit module files directly via
 | Pricing Block Module | Side-by-side pricing tiers with featured toggle + requirements panel |
 | CTA Banner Module | Full-width background image CTA, overlay colour/opacity, scroll-to-top button |
 | Footer Programme Module | Dark primary bg, logo (auto-white), tagline, social icons, link groups, legal bar |
+
+---
+
+## Email templates (reusable layouts in Design Manager)
+
+The MCP can both *create* new reusable email templates and *use* them when creating marketing emails. The pipeline mirrors the LP theme flow.
+
+### Tools
+
+- `generate_email_template` — writes a populated `template.html` to `OneDrive/generated-email-templates/[label]/`. Three modes:
+  - `from_brief` — uses the `email-template-generic/` base layout, populates brand + content tokens
+  - `from_html` — wraps raw HTML you supply with the `<!--templateType: email_base_template-->` header
+  - `from_email` — fetches an existing marketing email by ID and wraps its HTML body as a reusable template
+- `upload_email_template` — pushes the generated folder to the HubSpot Design Manager via the Source Code API. Returns `template_path_for_create_email`, the path to feed into `create_email`.
+- `list_email_templates` — lists Design Manager folders that contain a `template.html` with the email metadata header.
+- `create_email` — accepts `template_path` *or* `html_body`. If `template_path` is set, the email is based on the template (modules are inherited and overridable in HubSpot's email editor); otherwise the email uses the freeform `html_body`.
+
+### Standard workflow — generate from brief
+
+1. `generate_email_template` with `mode: "from_brief"`, brand + content
+2. `upload_email_template` to push to HubSpot
+3. `create_email` with `template_path` set to the returned `template_path_for_create_email`
+4. The new email opens in HubSpot's email editor with all the template's editable fields available
+
+### Standard workflow — clone from an existing email
+
+1. `list_emails` to find the source email's ID
+2. `generate_email_template` with `mode: "from_email"`, supplying the source `email_id`
+3. `upload_email_template`
+4. `create_email` referencing the new `template_path`
+
+### Base layout
+
+Path: `/Users/[username]/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents/email-template-generic/`
+
+A single-file table-based 600px-wide HubL template covering: header logo, optional hero image, headline, body, CTA button (label + URL), footer with required CAN-SPAM block (`{{ unsubscribe_link }}`, `{{ subscription_preferences_url }}`, company address). Edit the file directly to evolve the base layout for the whole team.
 
 ---
 

@@ -8,6 +8,11 @@ import { fileURLToPath } from "url";
 import { execFileSync } from "child_process";
 import { getValidAccessToken, listAuthorisedPortals } from "./auth.js";
 import { generateTheme, collectFiles } from "./lp-theme-generic/generate.js";
+import {
+  generateEmailTemplate,
+  writeTemplateHtml as writeEmailTemplateHtml,
+  collectFiles as collectEmailTemplateFiles,
+} from "./email-template-generic/generate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1004,7 +1009,7 @@ server.tool(
 // ─── TOOL: create_email ───────────────────────────────────────────────────────
 server.tool(
   "create_email",
-  "Create a new draft marketing email in HubSpot from a subject, body and settings",
+  "Create a new draft marketing email in HubSpot. Either provide html_body for a freeform email, OR provide template_path (Design Manager path to an email template) to base the email on a reusable template. The two are mutually exclusive — exactly one must be non-empty.",
   {
     portal_id:       z.string().describe("HubSpot portal ID"),
     name:            z.string().describe("Internal email name (shown in HubSpot dashboard)"),
@@ -1012,13 +1017,28 @@ server.tool(
     preview_text:    z.string().default("").describe("Preview/preheader text shown in inbox"),
     from_name:       z.string().describe("Sender display name"),
     from_email:      z.string().describe("Sender email address (must be verified in HubSpot)"),
-    html_body:       z.string().describe("Full HTML body of the email"),
+    html_body:       z.string().default("").describe("Full HTML body of the email — leave empty when using template_path"),
     plain_text_body: z.string().default("").describe("Plain text fallback body"),
+    template_path:   z.string().default("").describe("Design Manager path to an email template (e.g. 'email-templates/cloudtech-generic/template.html'). Use list_email_templates to discover. Leave empty when supplying html_body."),
     campaign_id:     z.string().default("").describe("Optional HubSpot campaign ID, or empty string to skip"),
   },
-  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, campaign_id }) => {
+  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, template_path, campaign_id }) => {
     try {
+      // Mutual exclusivity: exactly one of html_body / template_path
+      const hasHtml = Boolean(html_body);
+      const hasTemplate = Boolean(template_path);
+      if (hasHtml && hasTemplate) {
+        throw new Error("Provide either 'html_body' OR 'template_path', not both.");
+      }
+      if (!hasHtml && !hasTemplate) {
+        throw new Error("Provide either 'html_body' or 'template_path'.");
+      }
+
       const token = await getValidAccessToken(portal_id);
+
+      const contentBlock = hasTemplate
+        ? { templatePath: template_path, plainTextBody: plain_text_body }
+        : { body: html_body, plainTextBody: plain_text_body };
 
       const payload = {
         name,
@@ -1026,10 +1046,7 @@ server.tool(
         previewText: preview_text,
         fromName: from_name,
         fromEmail: from_email,
-        content: {
-          body: html_body,
-          plainTextBody: plain_text_body,
-        },
+        content: contentBlock,
         ...(campaign_id ? { campaignId: campaign_id } : {}),
       };
 
@@ -1212,6 +1229,201 @@ server.tool(
       return {
         content: [{ type: "text", text: JSON.stringify({ error: err.message }) }],
       };
+    }
+  }
+);
+
+// ─── TOOL: generate_email_template ────────────────────────────────────────────
+server.tool(
+  "generate_email_template",
+  "Generate a reusable HubSpot email template HTML file in a local folder, ready to upload to the Design Manager. Three modes: 'from_brief' renders the email-template-generic base layout populated with brand+content; 'from_html' wraps user-supplied raw HTML with the email-template metadata header; 'from_email' fetches an existing marketing email by ID and wraps its body as a reusable template.",
+  {
+    template_label: z.string().describe("Template label — used as folder name and HubSpot Design Manager name, e.g. 'CloudTech Email Generic'"),
+    mode: z.enum(["from_brief", "from_html", "from_email"]).describe("Authoring mode"),
+    // from_brief inputs
+    brand: z.object({
+      company_name:    z.string().default(""),
+      logo_url:        z.string().default(""),
+      primary_color:   z.string().default("#1A2E4A"),
+      secondary_color: z.string().default("#F4F4F4"),
+      accent_color:    z.string().default("#EF3E2D"),
+      font_heading:    z.string().default("Arial"),
+      font_body:       z.string().default("Arial"),
+      border_radius:   z.string().default("6px"),
+    }).default({}).describe("Brand tokens (used when mode=from_brief)"),
+    content: z.object({
+      hero_headline: z.string().default(""),
+      hero_body:     z.string().default("<p></p>"),
+      cta_label:     z.string().default("Get in touch"),
+      cta_url:       z.string().default("#"),
+      footer_text:   z.string().default(""),
+    }).default({}).describe("Content tokens (used when mode=from_brief)"),
+    // from_html input
+    html: z.string().default("").describe("Raw HTML to wrap as a template (used when mode=from_html)"),
+    // from_email inputs
+    portal_id: z.string().default("").describe("HubSpot portal ID (required when mode=from_email)"),
+    email_id:  z.string().default("").describe("Marketing email ID to clone (used when mode=from_email)"),
+  },
+  async ({ template_label, mode, brand, content, html, portal_id, email_id }) => {
+    try {
+      let outputPath;
+
+      if (mode === "from_brief") {
+        outputPath = generateEmailTemplate({ ...brand, template_label }, content);
+      } else if (mode === "from_html") {
+        if (!html) throw new Error("'html' is required when mode=from_html");
+        outputPath = writeEmailTemplateHtml(template_label, html);
+      } else if (mode === "from_email") {
+        if (!portal_id) throw new Error("'portal_id' is required when mode=from_email");
+        if (!email_id)  throw new Error("'email_id' is required when mode=from_email");
+        const token = await getValidAccessToken(portal_id);
+        const res = await fetch(
+          `https://api.hubapi.com/marketing/v3/emails/${email_id}`,
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+        if (!res.ok) throw new Error(`HubSpot API error fetching source email: ${res.status} ${await res.text()}`);
+        const e = await res.json();
+        const body = e.content?.body || "";
+        if (!body) throw new Error(`Source email ${email_id} has no html body`);
+        outputPath = writeEmailTemplateHtml(template_label, body);
+      } else {
+        throw new Error(`Unknown mode: ${mode}`);
+      }
+
+      const files = collectEmailTemplateFiles(outputPath);
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: "ok",
+            mode,
+            template_label,
+            output_path: outputPath,
+            file_count: files.length,
+            files: files.map((f) => f.relativePath),
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: upload_email_template ──────────────────────────────────────────────
+server.tool(
+  "upload_email_template",
+  "Upload a generated email-template folder to the HubSpot Design Manager via the Source Code API. Once uploaded, the template can be selected when creating new marketing emails or referenced via create_email's template_path parameter.",
+  {
+    portal_id:      z.string().describe("HubSpot portal ID to upload to"),
+    template_path:  z.string().describe("Absolute local path to the generated template folder"),
+    template_name:  z.string().describe("Destination folder name in HubSpot Design Manager, e.g. 'email-templates/cloudtech-generic'"),
+  },
+  async ({ portal_id, template_path, template_name }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+      const files = collectEmailTemplateFiles(template_path);
+
+      const results = [];
+      let failed = 0;
+
+      for (const file of files) {
+        const hubspotPath = `${template_name}/${file.relativePath}`;
+        const encodedPath = hubspotPath.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+
+        const fileBuffer = fs.readFileSync(file.absolutePath);
+        const blob = new Blob([fileBuffer]);
+        const formData = new FormData();
+        formData.append("file", blob, path.basename(file.absolutePath));
+
+        const res = await fetch(
+          `https://api.hubapi.com/cms/v3/source-code/published/content/${encodedPath}`,
+          { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: formData }
+        );
+
+        if (res.ok) {
+          results.push({ path: hubspotPath, status: "uploaded" });
+        } else {
+          results.push({ path: hubspotPath, status: "failed", error: await res.text() });
+          failed++;
+        }
+      }
+
+      // The HubSpot template path that create_email references is the .html file path
+      const templateHtmlPath = files
+        .map((f) => `${template_name}/${f.relativePath}`)
+        .find((p) => p.endsWith("template.html")) || `${template_name}/template.html`;
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: failed === 0 ? "ok" : "partial",
+            portal_id,
+            template_name,
+            uploaded: results.filter((r) => r.status === "uploaded").length,
+            failed,
+            template_path_for_create_email: templateHtmlPath,
+            results,
+          }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
+    }
+  }
+);
+
+// ─── TOOL: list_email_templates ───────────────────────────────────────────────
+server.tool(
+  "list_email_templates",
+  "List email templates available in the HubSpot Design Manager for the given portal. Returns top-level Design Manager folders that contain a template.html with an email_base_template metadata header.",
+  {
+    portal_id: z.string().describe("HubSpot portal ID"),
+  },
+  async ({ portal_id }) => {
+    try {
+      const token = await getValidAccessToken(portal_id);
+
+      const rootRes = await fetch(
+        "https://api.hubapi.com/cms/v3/source-code/published/metadata/@root",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!rootRes.ok) throw new Error(`HubSpot API error: ${rootRes.status} ${await rootRes.text()}`);
+      const rootData = await rootRes.json();
+      const candidates = rootData.children || [];
+
+      // Probe each top-level folder for a template.html with the email metadata header
+      const checks = await Promise.all(candidates.map(async (name) => {
+        const probePath = `${name}/template.html`;
+        const encoded = probePath.split("/").map(encodeURIComponent).join("/");
+        const res = await fetch(
+          `https://api.hubapi.com/cms/v3/source-code/published/content/${encoded}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) return null;
+        const text = await res.text();
+        if (/templateType:\s*email_base_template/i.test(text)) {
+          const labelMatch = text.match(/label:\s*([^\n\r]+)/);
+          return {
+            folder: name,
+            template_path: probePath,
+            label: labelMatch ? labelMatch[1].trim() : name,
+          };
+        }
+        return null;
+      }));
+
+      const templates = checks.filter(Boolean);
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ status: "ok", portal_id, total: templates.length, templates }),
+        }],
+      };
+    } catch (err) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: err.message }) }] };
     }
   }
 );
