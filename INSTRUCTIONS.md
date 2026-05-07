@@ -444,12 +444,28 @@ The programme theme `assets/css/style.css` also includes HubSpot override rules:
 
 ## Logging
 
-Every tool call is automatically logged to:
+Startup events and helper-load failures are logged centrally so the team can diagnose issues across machines without round-tripping screenshots.
+
+**Primary location** (when OneDrive is reachable):
 ```
 OneDrive/MCP Claude - Documents/logs/[username].log
 ```
 
-Format: `[YYYY-MM-DD HH:MM:SS] username | tool_name | key:value pairs`
+**Fallback** (when OneDrive isn't synced yet — typically the case the log is most useful for):
+```
+~/.latigid/logs/[username].log
+```
+
+Lines are also echoed to stderr with a `[log]` prefix, so they show up in Claude Desktop's developer console (`Open developer settings` → MCP logs).
+
+**Format**: `[YYYY-MM-DD HH:MM:SS] username | event | key:value | ...`
+
+**Events currently emitted:**
+
+- `startup` — one line per MCP boot. `status:ok|partial`, plus per-helper status (`lp_theme:ok|fail`, `email_template:ok|fail`), `hostname`, `node` version. Acts as a heartbeat — absence of recent startup lines indicates the MCP isn't booting.
+- `helper_failed` — emitted alongside `startup:partial`. `name` (which helper) and `error` (the underlying ESM import error). Diagnoses missing OneDrive symlinks.
+
+**Privacy**: lines contain only timestamp, OS username, event name, and flat key:value details. No tokens, secrets, HubSpot content data, or portal IDs are logged. Tool-call logging (per the original convention) is a planned extension, not yet implemented.
 
 ---
 

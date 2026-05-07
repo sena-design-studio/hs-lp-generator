@@ -3,16 +3,132 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import "dotenv/config";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { execFileSync } from "child_process";
 import { getValidAccessToken, listAuthorisedPortals } from "./auth.js";
-import { generateTheme, collectFiles } from "./lp-theme-generic/generate.js";
-import {
-  generateEmailTemplate,
-  writeTemplateHtml as writeEmailTemplateHtml,
-  collectFiles as collectEmailTemplateFiles,
-} from "./email-template-generic/generate.js";
+
+// ─── Per-user failure log ────────────────────────────────────────────────────
+// Writes startup + helper-failure events to OneDrive/MCP Claude - Documents/logs/[username].log
+// so the team can diagnose issues without round-tripping screenshots.
+//
+// Fallback chain when OneDrive isn't reachable:
+//   1. ONEDRIVE_PATH from .env → <onedrive>/logs/[username].log
+//   2. ~/.latigid/logs/[username].log (always works locally)
+//   3. stderr only (Claude Desktop's developer console)
+//
+// Privacy: lines contain only timestamp, OS username, event name, and
+// flat key:value details. No tokens, secrets, or content data.
+
+function readOnedrivePathFromEnv() {
+  try {
+    const envFile = path.join(__dirname, ".env");
+    if (!fs.existsSync(envFile)) return null;
+    const m = fs.readFileSync(envFile, "utf8").match(/^ONEDRIVE_PATH=(.*)$/m);
+    return m ? m[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function logEvent(event, details = {}) {
+  try {
+    const username = (() => {
+      try { return os.userInfo().username || "unknown"; } catch { return "unknown"; }
+    })();
+    const ts = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const detailParts = Object.entries(details).map(([k, v]) => {
+      // Flatten newlines and pipe characters so each event is one line
+      const safe = String(v).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
+      return `${k}:${safe}`;
+    });
+    const line = `[${ts}] ${username} | ${event}` +
+      (detailParts.length ? " | " + detailParts.join(" | ") : "") + "\n";
+
+    // Echo to stderr unconditionally for Claude Desktop dev console
+    process.stderr.write(`[log] ${line}`);
+
+    // File targets, in fallback order
+    const candidates = [];
+    const onedrive = readOnedrivePathFromEnv();
+    if (onedrive) candidates.push(path.join(onedrive, "logs"));
+    candidates.push(path.join(os.homedir(), ".latigid", "logs"));
+
+    for (const dir of candidates) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.appendFileSync(path.join(dir, `${username}.log`), line, "utf8");
+        return; // first successful write wins
+      } catch {}
+    }
+  } catch (err) {
+    try { process.stderr.write(`[log-failure] ${err.message}\n`); } catch {}
+  }
+}
+
+// ─── Defensive shared-folder imports ─────────────────────────────────────────
+// lp-theme-generic and email-template-generic are symlinks into OneDrive. If
+// OneDrive hasn't synced yet (or the symlink is missing), the static import
+// throws ERR_MODULE_NOT_FOUND and crashes the entire MCP at startup, leaving
+// Claude Desktop with no server to attach to.
+//
+// Instead, attempt the imports defensively. If one fails, log a warning and
+// let the rest of the MCP start; tools that need the missing helper return a
+// clean error when invoked, pointing the user at the fix.
+
+let _lpTheme = null;
+try {
+  _lpTheme = await import("./lp-theme-generic/generate.js");
+} catch (err) {
+  console.error(`[startup] WARNING: lp-theme-generic/generate.js failed to load — landing-page tools (generate_lp, upload_theme) will return an error when called. Cause: ${err.message}. Fix: ensure OneDrive is synced and the lp-theme-generic symlink exists in the install dir, then restart Claude Desktop.`);
+  logEvent("helper_failed", { name: "lp-theme-generic", error: err.message });
+}
+
+let _emailTemplate = null;
+try {
+  _emailTemplate = await import("./email-template-generic/generate.js");
+} catch (err) {
+  console.error(`[startup] WARNING: email-template-generic/generate.js failed to load — email-template tools (generate_email_template, upload_email_template) will return an error when called. Cause: ${err.message}. Fix: ensure OneDrive is synced and the email-template-generic symlink exists in the install dir, then restart Claude Desktop.`);
+  logEvent("helper_failed", { name: "email-template-generic", error: err.message });
+}
+
+// One summary line per startup so the log shows a heartbeat even when nothing fails
+logEvent("startup", {
+  status: (_lpTheme && _emailTemplate) ? "ok" : "partial",
+  lp_theme: _lpTheme ? "ok" : "fail",
+  email_template: _emailTemplate ? "ok" : "fail",
+  hostname: os.hostname(),
+  node: process.version,
+});
+
+// Helpers to short-circuit tools whose dependencies didn't load.
+function requireLpTheme() {
+  if (!_lpTheme) {
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          error: "lp-theme-generic helper not loaded at MCP startup. The symlink to OneDrive is missing or OneDrive hasn't synced the folder yet. Run 'Update LP Generator.command' to recreate symlinks, ensure OneDrive is synced, then restart Claude Desktop.",
+        }),
+      }],
+    };
+  }
+  return null;
+}
+function requireEmailTemplate() {
+  if (!_emailTemplate) {
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          error: "email-template-generic helper not loaded at MCP startup. The symlink to OneDrive is missing or OneDrive hasn't synced the folder yet. Run 'Update LP Generator.command' to recreate symlinks, ensure OneDrive is synced, then restart Claude Desktop.",
+        }),
+      }],
+    };
+  }
+  return null;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -215,6 +331,9 @@ server.tool(
     }),
   },
   async ({ brand, content }) => {
+    const guard = requireLpTheme();
+    if (guard) return guard;
+    const { generateTheme, collectFiles } = _lpTheme;
     try {
       const outputPath = generateTheme(brand, content);
       const files = collectFiles(outputPath);
@@ -249,6 +368,9 @@ server.tool(
     theme_name: z.string().describe("Destination folder name in HubSpot Design Manager"),
   },
   async ({ portal_id, theme_path, theme_name }) => {
+    const guard = requireLpTheme();
+    if (guard) return guard;
+    const { collectFiles } = _lpTheme;
     try {
       const token = await getValidAccessToken(portal_id);
       const files = collectFiles(theme_path);
@@ -1309,6 +1431,9 @@ server.tool(
     email_id:  z.string().default("").describe("Marketing email ID to clone (used when mode=from_email)"),
   },
   async ({ template_label, mode, brand, content, html, portal_id, email_id }) => {
+    const guard = requireEmailTemplate();
+    if (guard) return guard;
+    const { generateEmailTemplate, writeTemplateHtml: writeEmailTemplateHtml, collectFiles: collectEmailTemplateFiles } = _emailTemplate;
     try {
       let outputPath;
 
@@ -1364,6 +1489,9 @@ server.tool(
     template_name:  z.string().describe("Destination folder name in HubSpot Design Manager, e.g. 'email-templates/cloudtech-generic'"),
   },
   async ({ portal_id, template_path, template_name }) => {
+    const guard = requireEmailTemplate();
+    if (guard) return guard;
+    const { collectFiles: collectEmailTemplateFiles } = _emailTemplate;
     try {
       const token = await getValidAccessToken(portal_id);
       const files = collectEmailTemplateFiles(template_path);
