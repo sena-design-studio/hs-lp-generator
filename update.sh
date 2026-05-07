@@ -62,39 +62,101 @@ else
   log "Dependencies unchanged"
 fi
 
-# ─── Self-heal symlinks ───────────────────────────────────────────────────────
-# When new shared OneDrive folders are added in code (e.g. email-template-generic),
-# existing installs need the symlinks created on update. install.sh creates them
-# on first install; this block ensures parity for already-installed users.
+# ─── Self-heal config (.env + symlinks) ──────────────────────────────────────
+# Two failure modes this block fixes:
+#   1. New shared OneDrive folder added in code (e.g. email-template-generic)
+#      that existing installs don't have a symlink for.
+#   2. .env or symlinks were copied from another user's machine — paths point
+#      to /Users/<someone-else>/... and never resolve on this Mac. Validate
+#      that ONEDRIVE_PATH (and every symlink target) lives under $HOME, and
+#      rebuild anything that doesn't.
 
-# Resolve OneDrive path from .env, else best-effort auto-detect
+ENV_FILE="$INSTALL_DIR/.env"
 ONEDRIVE_PATH=""
-if [ -f "$INSTALL_DIR/.env" ]; then
-  ONEDRIVE_PATH=$(grep -E '^ONEDRIVE_PATH=' "$INSTALL_DIR/.env" | sed 's/^ONEDRIVE_PATH=//')
+
+if [ -f "$ENV_FILE" ]; then
+  ONEDRIVE_PATH=$(grep -E '^ONEDRIVE_PATH=' "$ENV_FILE" | sed 's/^ONEDRIVE_PATH=//')
 fi
-if [ -z "$ONEDRIVE_PATH" ]; then
+
+# Validate the .env-supplied path: must be inside $HOME AND exist
+ONEDRIVE_VALID=0
+if [ -n "$ONEDRIVE_PATH" ]; then
+  case "$ONEDRIVE_PATH" in
+    "$HOME"/*)
+      if [ -d "$ONEDRIVE_PATH" ]; then
+        ONEDRIVE_VALID=1
+      else
+        warn "ONEDRIVE_PATH from .env points to a non-existent folder ($ONEDRIVE_PATH) — re-detecting"
+      fi
+      ;;
+    *)
+      warn "ONEDRIVE_PATH from .env points outside your home ($ONEDRIVE_PATH) — looks like the .env was copied from another user. Re-detecting."
+      ;;
+  esac
+fi
+
+# Re-detect via the same candidates install.sh uses
+if [ $ONEDRIVE_VALID -eq 0 ]; then
+  ONEDRIVE_PATH=""
   for candidate in \
     "$HOME/Library/CloudStorage/OneDrive-LATIGIDLDA/MCP Claude - Documents" \
     "$HOME/OneDrive - LATIGID LDA/MCP Claude - Documents" \
     "$HOME/OneDrive/MCP Claude - Documents"; do
     if [ -d "$candidate" ]; then ONEDRIVE_PATH="$candidate"; break; fi
   done
+  if [ -z "$ONEDRIVE_PATH" ]; then
+    for candidate in "$HOME"/Library/CloudStorage/OneDrive-*/"MCP Claude - Documents"; do
+      if [ -d "$candidate" ]; then ONEDRIVE_PATH="$candidate"; break; fi
+    done
+  fi
 fi
 
+# Rewrite .env so subsequent runs (and the MCP itself, which reads it on every
+# call) pick up the corrected path
+if [ -n "$ONEDRIVE_PATH" ] && [ -f "$ENV_FILE" ]; then
+  CURRENT_IN_ENV=$(grep -E '^ONEDRIVE_PATH=' "$ENV_FILE" | sed 's/^ONEDRIVE_PATH=//')
+  if [ "$CURRENT_IN_ENV" != "$ONEDRIVE_PATH" ]; then
+    if grep -q '^ONEDRIVE_PATH=' "$ENV_FILE"; then
+      sed -i.bak "s|^ONEDRIVE_PATH=.*|ONEDRIVE_PATH=$ONEDRIVE_PATH|" "$ENV_FILE"
+      rm -f "$ENV_FILE.bak"
+    else
+      echo "ONEDRIVE_PATH=$ONEDRIVE_PATH" >> "$ENV_FILE"
+    fi
+    log "Corrected .env: ONEDRIVE_PATH=$ONEDRIVE_PATH"
+  fi
+fi
+
+# Validate + rebuild symlinks
 if [ -n "$ONEDRIVE_PATH" ] && [ -d "$ONEDRIVE_PATH" ]; then
+  rebuilt_any=0
   created_any=0
   for f in lp-theme-generic lp-theme-programme email-template-generic generated-themes generated-email-templates client-images; do
     LINK="$INSTALL_DIR/$f"
     TARGET="$ONEDRIVE_PATH/$f"
-    # Skip if a working symlink/dir is already present
-    if [ -e "$LINK" ]; then continue; fi
-    if [ -d "$TARGET" ]; then
+
+    # If existing symlink points outside $HOME, kill it
+    if [ -L "$LINK" ]; then
+      CURRENT_TARGET=$(readlink "$LINK")
+      case "$CURRENT_TARGET" in
+        "$HOME"/*) : ;;  # within home — keep
+        *)
+          warn "Symlink $f points outside your home ($CURRENT_TARGET) — rebuilding"
+          rm -f "$LINK"
+          rebuilt_any=1
+          ;;
+      esac
+    fi
+
+    # Create if missing
+    if [ ! -e "$LINK" ] && [ -d "$TARGET" ]; then
       ln -s "$TARGET" "$LINK"
-      log "Linked missing folder: $f"
+      log "Linked: $f → $TARGET"
       created_any=1
     fi
   done
-  [ $created_any -eq 0 ] && log "All shared folders already linked"
+  if [ $rebuilt_any -eq 0 ] && [ $created_any -eq 0 ]; then
+    log "All shared folders already linked correctly"
+  fi
 else
   warn "OneDrive path not found — skipping symlink self-heal. If the MCP fails to start, run install.sh again."
 fi
