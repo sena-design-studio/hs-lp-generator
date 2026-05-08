@@ -19,3 +19,14 @@ migrate-new-app.sh
 # .pkg build artifacts.
 installer/dist/
 *.pkg
+
+# Per-user OneDrive symlinks — created by install.sh against $ONEDRIVE_PATH.
+# These MUST stay gitignored: committing them captures one developer's
+# /Users/<name>/Library/CloudStorage/... path and reproduces it on every
+# teammate's machine via `git clone`.
+/lp-theme-generic
+/lp-theme-programme
+/email-template-generic
+/generated-themes
+/generated-email-templates
+/client-images

@@ -35,6 +35,25 @@ section() { echo -e "\n${BOLD}$1${NC}  $2"; }
 
 trap 'error "Install failed at line $LINENO. Press Enter to close."; read -r _; exit 1' ERR
 
+# ─── Guard: refuse to install into a synced cloud folder ──────────────────────
+# The MCP must run from a local-only path. Cloud sync providers (OneDrive,
+# Dropbox, Google Drive, iCloud Drive) cause file-lock conflicts, replicate
+# per-machine state across teammates, and silently corrupt SQLite DBs. Bail
+# out early if $HOME (and therefore $INSTALL_DIR) lives inside one.
+HOME_REAL=$(cd "$HOME" && pwd -P)
+case "$HOME_REAL" in
+  *"/CloudStorage/"*                                  | \
+  *"/Dropbox/"*       | *"/Dropbox "*                 | \
+  *"/Google Drive/"*  | *"/GoogleDrive/"*             | \
+  *"/Library/Mobile Documents/com~apple~CloudDocs/"* )
+    error "Your home directory ($HOME_REAL) is inside a synced cloud folder."
+    error "The MCP can't run reliably from cloud storage — file locks, sync"
+    error "conflicts, and per-machine paths all break. Move your home off"
+    error "cloud sync, or run this installer with HOME set to a local path."
+    exit 1
+    ;;
+esac
+
 clear
 header "Latigid LP Generator — Installer"
 
@@ -194,17 +213,37 @@ if [ -z "$ONEDRIVE_PATH" ]; then
   log "OneDrive path set"
 fi
 
-# Symlink the shared folders into the install dir
+# Symlink the shared folders into the install dir.
+#
+# Defensive validation: $TARGET sits inside the user's OneDrive folder, but
+# the OneDrive folder itself can contain stale symlinks pointing to another
+# user's path (this happened in the wild — a teammate ended up with
+# email-template-generic resolving to /Users/filipesena/... because someone
+# committed a symlink in OneDrive). After resolving the target's full
+# symlink chain with `cd -P`, refuse to use anything outside $HOME.
 for f in lp-theme-generic lp-theme-programme email-template-generic generated-themes generated-email-templates client-images; do
   LINK="$INSTALL_DIR/$f"
   TARGET="$ONEDRIVE_PATH/$f"
   if [ -L "$LINK" ] || [ -e "$LINK" ]; then rm -rf "$LINK"; fi
-  if [ -d "$TARGET" ]; then
-    ln -s "$TARGET" "$LINK"
-    log "Linked $f → OneDrive"
-  else
+
+  if [ ! -d "$TARGET" ]; then
     warn "$f not in OneDrive yet — re-run the installer after sync completes"
+    continue
   fi
+
+  # Resolve every symlink hop inside $TARGET (including any planted in OneDrive).
+  RESOLVED=$(cd -P -- "$TARGET" 2>/dev/null && pwd -P)
+  case "$RESOLVED" in
+    "$HOME"/*)
+      ln -s "$TARGET" "$LINK"
+      log "Linked $f → OneDrive"
+      ;;
+    *)
+      warn "$f in OneDrive resolves to '$RESOLVED' (outside your home) — skipping."
+      warn "  This usually means a stale symlink got synced into the shared folder."
+      warn "  Tell Filipe to remove $ONEDRIVE_PATH/$f on his machine."
+      ;;
+  esac
 done
 
 # ─── Step 7: Write .env + configure Claude Desktop ────────────────────────────

@@ -127,14 +127,22 @@ if [ -n "$ONEDRIVE_PATH" ] && [ -f "$ENV_FILE" ]; then
 fi
 
 # Validate + rebuild symlinks
+#
+# Two-layer check:
+#   1. The IMMEDIATE symlink target (readlink $LINK) must be under $HOME.
+#      Catches installs that inherited a .env or symlink from another user.
+#   2. The RESOLVED target (cd -P into $TARGET) must also stay under $HOME.
+#      Catches stale symlinks-in-OneDrive that point to /Users/<someone>/...
+#      after sync — the immediate target is fine, but the chain escapes.
 if [ -n "$ONEDRIVE_PATH" ] && [ -d "$ONEDRIVE_PATH" ]; then
   rebuilt_any=0
   created_any=0
+  skipped_any=0
   for f in lp-theme-generic lp-theme-programme email-template-generic generated-themes generated-email-templates client-images; do
     LINK="$INSTALL_DIR/$f"
     TARGET="$ONEDRIVE_PATH/$f"
 
-    # If existing symlink points outside $HOME, kill it
+    # Layer 1: if existing symlink's immediate target points outside $HOME, kill it
     if [ -L "$LINK" ]; then
       CURRENT_TARGET=$(readlink "$LINK")
       case "$CURRENT_TARGET" in
@@ -147,14 +155,24 @@ if [ -n "$ONEDRIVE_PATH" ] && [ -d "$ONEDRIVE_PATH" ]; then
       esac
     fi
 
-    # Create if missing
+    # Layer 2: if creating fresh, verify the resolved chain stays under $HOME
     if [ ! -e "$LINK" ] && [ -d "$TARGET" ]; then
-      ln -s "$TARGET" "$LINK"
-      log "Linked: $f → $TARGET"
-      created_any=1
+      RESOLVED=$(cd -P -- "$TARGET" 2>/dev/null && pwd -P)
+      case "$RESOLVED" in
+        "$HOME"/*)
+          ln -s "$TARGET" "$LINK"
+          log "Linked: $f → $TARGET"
+          created_any=1
+          ;;
+        *)
+          warn "Skipped $f — OneDrive target resolves to '$RESOLVED' (outside your home)."
+          warn "  Likely a stale symlink synced into the shared folder. Tell Filipe."
+          skipped_any=1
+          ;;
+      esac
     fi
   done
-  if [ $rebuilt_any -eq 0 ] && [ $created_any -eq 0 ]; then
+  if [ $rebuilt_any -eq 0 ] && [ $created_any -eq 0 ] && [ $skipped_any -eq 0 ]; then
     log "All shared folders already linked correctly"
   fi
 else
