@@ -130,6 +130,68 @@ function requireEmailTemplate() {
   return null;
 }
 
+// ─── Portal-write confirmation gate ──────────────────────────────────────────
+// Every tool that writes to HubSpot (creates a page, uploads a theme, sends
+// content updates, etc.) routes through requirePortalConfirmation. The
+// session remembers which portals the user has explicitly confirmed; the
+// first write to each new portal returns a confirmation prompt instead of
+// executing.
+//
+// Why per-portal-per-session and not per-call: confirming every single write
+// is fatiguing and trains people to click "yes" reflexively, which defeats
+// the safety net. Confirming once per portal still catches the actual bug
+// (writing to the wrong portal because the MCP was connected to it from a
+// previous session) without making routine multi-step workflows painful.
+//
+// To re-trigger confirmation, restart Claude Desktop (which restarts the MCP).
+
+const _confirmedPortals = new Set();
+const _portalInfoCache = new Map();
+
+async function fetchPortalInfo(portal_id, token) {
+  if (_portalInfoCache.has(portal_id)) return _portalInfoCache.get(portal_id);
+  try {
+    const res = await fetch(`https://api.hubapi.com/oauth/v1/access-tokens/${token}`);
+    if (!res.ok) return null;
+    const info = await res.json();
+    _portalInfoCache.set(portal_id, info);
+    return info;
+  } catch {
+    return null;
+  }
+}
+
+async function requirePortalConfirmation({ portal_id, confirm, token, action }) {
+  if (confirm === true) {
+    _confirmedPortals.add(String(portal_id));
+    return null;
+  }
+  if (_confirmedPortals.has(String(portal_id))) return null;
+
+  const info = await fetchPortalInfo(portal_id, token);
+  const friendly = info?.hub_domain
+    ? `${info.hub_domain} (portal ${portal_id})`
+    : `portal ${portal_id}`;
+
+  return {
+    content: [{
+      type: "text",
+      text: JSON.stringify({
+        status: "confirmation_required",
+        portal_id,
+        portal_name: info?.hub_domain ?? null,
+        action,
+        message:
+          `About to ${action} on ${friendly}. ` +
+          `Confirm with the user that this is the intended portal — especially ` +
+          `if they have a separate test portal — then re-call this tool with ` +
+          `confirm: true to proceed. Subsequent writes to the same portal in ` +
+          `this session won't re-prompt.`,
+      }),
+    }],
+  };
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const server = new McpServer({
@@ -333,10 +395,11 @@ server.tool(
   async ({ brand, content }) => {
     const guard = requireLpTheme();
     if (guard) return guard;
-    const { generateTheme, collectFiles } = _lpTheme;
+    const { generateTheme, collectFiles, getLastGenerateMeta } = _lpTheme;
     try {
       const outputPath = generateTheme(brand, content);
       const files = collectFiles(outputPath);
+      const meta = (typeof getLastGenerateMeta === "function") ? getLastGenerateMeta() : null;
 
       return {
         content: [{
@@ -347,16 +410,86 @@ server.tool(
             output_path: outputPath,
             file_count: files.length,
             files: files.map((f) => f.relativePath),
+            // When the primary OneDrive path wasn't writable and we fell back
+            // to ~/Desktop or /tmp, surface that to Claude so it can tell the
+            // user where the output actually landed instead of silently using
+            // a different path.
+            ...(meta?.fell_back ? {
+              fallback_used:    true,
+              fallback_source:  meta.source,
+              fallback_message: `Primary output path not writable; wrote to ${meta.base} via ${meta.source}. Tried before success: ${meta.attempted_before_success.join(", ") || "(none)"}.`,
+            } : {}),
           }),
         }],
       };
     } catch (err) {
       return {
-        content: [{ type: "text", text: JSON.stringify({ error: err.message }) }],
+        content: [{ type: "text", text: JSON.stringify({ error: err.message, code: err.code }) }],
       };
     }
   }
 );
+
+// ─── HubL pre-flight validation (BETA editor compatibility) ─────────────────
+// HubSpot's BETA editor (default in new portals) hangs indefinitely when it
+// loads a template containing {% extends %} or {% block %}. The classic
+// editor accepts both, which is why old themes pass through fine but new
+// generated themes deadlock the side panel. Validate every .html in the
+// theme before uploading; refuse the upload if any hard rule fails so the
+// user doesn't push a broken theme to a client portal.
+function validateHubLForBetaEditor(files) {
+  const errors = [];   // hard fails — refuse upload
+  const warnings = []; // soft warnings — proceed with notice
+
+  for (const file of files) {
+    if (!/\.html$/i.test(file.relativePath)) continue;
+
+    let content;
+    try { content = fs.readFileSync(file.absolutePath, "utf8"); } catch { continue; }
+
+    // Strip HubL comments so commented-out examples don't trigger rules.
+    const stripped = content.replace(/\{#[\s\S]*?#\}/g, "");
+
+    if (/\{%-?\s*extends\b/.test(stripped)) {
+      errors.push({
+        file: file.relativePath,
+        rule: "no_extends",
+        message: "{% extends %} causes the HubSpot BETA editor to hang. Inline the layout into the template instead of inheriting from a base.",
+      });
+    }
+    if (/\{%-?\s*(end)?block\b/.test(stripped)) {
+      errors.push({
+        file: file.relativePath,
+        rule: "no_block",
+        message: "{% block %}/{% endblock %} causes the HubSpot BETA editor to hang. Use {% require_head %} and {% require_js %} for asset injection instead.",
+      });
+    }
+
+    // Heuristic: a file with both <head> and <body> is a base/layout template.
+    // It should call {% require_head %} (before </head>) and {% require_js %}
+    // (before </body>) so module CSS/JS can inject. Missing them won't crash
+    // the editor, but module styles won't render — warn only.
+    const looksLikeBaseTemplate = /<\s*head\b/i.test(content) && /<\s*body\b/i.test(content);
+    if (looksLikeBaseTemplate) {
+      if (!/\{%-?\s*require_head\b/.test(stripped)) {
+        warnings.push({
+          file: file.relativePath,
+          rule: "missing_require_head",
+          message: "Base template appears to lack {% require_head %}. Modules cannot inject CSS/meta tags into <head> without it.",
+        });
+      }
+      if (!/\{%-?\s*require_js\b/.test(stripped)) {
+        warnings.push({
+          file: file.relativePath,
+          rule: "missing_require_js",
+          message: "Base template appears to lack {% require_js %}. Modules cannot inject scripts without it.",
+        });
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
 
 // ─── TOOL: upload_theme ───────────────────────────────────────────────────────
 server.tool(
@@ -366,14 +499,35 @@ server.tool(
     portal_id:  z.string().describe("HubSpot portal ID to upload to"),
     theme_path: z.string().describe("Absolute local path to the generated theme folder"),
     theme_name: z.string().describe("Destination folder name in HubSpot Design Manager"),
+    confirm:    z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session; subsequent writes to the same portal don't re-prompt."),
   },
-  async ({ portal_id, theme_path, theme_name }) => {
+  async ({ portal_id, theme_path, theme_name, confirm }) => {
     const guard = requireLpTheme();
     if (guard) return guard;
     const { collectFiles } = _lpTheme;
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "upload a theme" });
+      if (confirmation) return confirmation;
       const files = collectFiles(theme_path);
+
+      // Pre-flight: refuse to push HubL that would break the BETA editor.
+      const validation = validateHubLForBetaEditor(files);
+      if (validation.errors.length > 0) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              status: "validation_failed",
+              portal_id,
+              theme_name,
+              errors:   validation.errors,
+              warnings: validation.warnings,
+              message: `Refused upload: ${validation.errors.length} HubL issue(s) would break the HubSpot BETA editor. Fix the listed files and retry.`,
+            }),
+          }],
+        };
+      }
 
       const results = [];
       let failed = 0;
@@ -419,6 +573,9 @@ server.tool(
             uploaded: results.filter((r) => r.status === "uploaded").length,
             failed,
             results,
+            // Surface non-fatal HubL warnings (e.g., missing require_head) so
+            // Claude can mention them to the user even though the upload succeeded.
+            ...(validation.warnings.length > 0 ? { warnings: validation.warnings } : {}),
           }),
         }],
       };
@@ -440,10 +597,13 @@ server.tool(
     page_slug:  z.string().describe("URL slug, e.g. /campaign-q3"),
     theme_name: z.string().describe("Theme folder name as uploaded to HubSpot"),
     page_type:  z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
+    confirm:    z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, page_name, page_slug, theme_name, page_type }) => {
+  async ({ portal_id, page_name, page_slug, theme_name, page_type, confirm }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: `create a draft ${page_type === "site" ? "site" : "landing"} page` });
+      if (confirmation) return confirmation;
       const resource = pagesResource(page_type);
       const templatePath = `${theme_name}/templates/layout/base.html`;
 
@@ -500,10 +660,13 @@ server.tool(
     portal_id:  z.string().describe("HubSpot portal ID"),
     file_path:  z.string().describe("Absolute local path to the image file"),
     folder_name: z.string().default("lp-generator").describe("Folder name in HubSpot File Manager"),
+    confirm:    z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, file_path, folder_name }) => {
+  async ({ portal_id, file_path, folder_name, confirm }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "upload an image" });
+      if (confirmation) return confirmation;
       const fileName = path.basename(file_path);
       const fileBuffer = fs.readFileSync(file_path);
       const blob = new Blob([fileBuffer]);
@@ -704,10 +867,13 @@ server.tool(
     page_id:    z.string().describe("HubSpot page ID to update"),
     theme_name: z.string().describe("Theme folder name as uploaded to HubSpot"),
     page_type:  z.enum(["landing", "site"]).default("landing").describe("Page type: 'landing' for landing pages, 'site' for website/site pages. Defaults to 'landing'."),
+    confirm:    z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, page_id, theme_name, page_type }) => {
+  async ({ portal_id, page_id, theme_name, page_type, confirm }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "update page metadata" });
+      if (confirmation) return confirmation;
       const resource = pagesResource(page_type);
       const templatePath = `${theme_name}/templates/layout/base.html`;
 
@@ -945,10 +1111,13 @@ server.tool(
     slug: z.string().describe("New URL slug, or empty string to skip"),
     template_path: z.string().describe("New template path, or empty string to skip"),
     widgets: z.string().describe("JSON string of module widget overrides, or empty string to skip"),
+    confirm: z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, page_id, page_type, name, html_title, meta_description, slug, template_path, widgets }) => {
+  async ({ portal_id, page_id, page_type, name, html_title, meta_description, slug, template_path, widgets, confirm }) => {
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "update page content" });
+      if (confirmation) return confirmation;
       const resource = pagesResource(page_type);
       const body = {};
       if (name) body.name = name;
@@ -1147,8 +1316,9 @@ server.tool(
     template_path:   z.string().default("").describe("Design Manager path to an email template (e.g. 'email-templates/cloudtech-generic/template.html'). Use list_email_templates to discover. Leave empty when supplying html_body."),
     campaign_id:     z.string().default("").describe("Optional HubSpot campaign ID, or empty string to skip"),
     business_unit_id: z.string().default("").describe("Required for portals with Marketing Hub Enterprise (multiple business units). Use list_business_units to discover. Empty string to skip."),
+    confirm: z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, template_path, campaign_id, business_unit_id }) => {
+  async ({ portal_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, template_path, campaign_id, business_unit_id, confirm }) => {
     try {
       // Mutual exclusivity: exactly one of html_body / template_path
       const hasHtml = Boolean(html_body);
@@ -1161,6 +1331,8 @@ server.tool(
       }
 
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "create a draft email" });
+      if (confirmation) return confirmation;
 
       const contentBlock = hasTemplate
         ? { templatePath: template_path, plainTextBody: plain_text_body }
@@ -1224,8 +1396,9 @@ server.tool(
     business_unit_id: z.string().default("").describe("New business unit ID, or empty string to skip. Use list_business_units to discover valid IDs."),
     template_path:   z.string().default("").describe("New Design Manager template path (e.g. 'email-templates/cloudtech-generic/template.html') to switch the email's underlying template. Empty string to skip. Mutually exclusive with html_body."),
     widget_overrides: z.string().default("").describe("JSON string of widget overrides for template-based emails, or empty string to skip. Auto-merges with the email's existing widgets (you only need to send the delta — previously-set overrides are preserved). Shape: {\"widgetName\":{\"body\":{\"value\":\"new text\"}}, ...}. For text widgets use {\"body\":{\"value\":\"...\"}}; for rich_text use {\"body\":{\"html\":\"<p>...</p>\"}}; for image use {\"body\":{\"src\":\"https://...\",\"alt\":\"...\"}}. Widget names match the template's HubL widget blocks (e.g. 'headline', 'body', 'cta_label', 'cta_url', 'logo', 'hero_image', 'footer_text'). To actively remove an override, send the widget with {\"deleted_at\": <ms timestamp>}."),
+    confirm: z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, email_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, business_unit_id, template_path, widget_overrides }) => {
+  async ({ portal_id, email_id, name, subject, preview_text, from_name, from_email, html_body, plain_text_body, business_unit_id, template_path, widget_overrides, confirm }) => {
     try {
       // Mutual exclusivity guard: html_body abandons template association,
       // template_path/widget_overrides keep it. html_body must stand alone.
@@ -1234,6 +1407,8 @@ server.tool(
       }
 
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "update email content" });
+      if (confirmation) return confirmation;
 
       const payload = {};
       if (name)         payload.name        = name;
@@ -1487,13 +1662,16 @@ server.tool(
     portal_id:      z.string().describe("HubSpot portal ID to upload to"),
     template_path:  z.string().describe("Absolute local path to the generated template folder"),
     template_name:  z.string().describe("Destination folder name in HubSpot Design Manager, e.g. 'email-templates/cloudtech-generic'"),
+    confirm:        z.boolean().default(false).describe("Set true to confirm writing to portal_id. Required on the first write to a portal in this session."),
   },
-  async ({ portal_id, template_path, template_name }) => {
+  async ({ portal_id, template_path, template_name, confirm }) => {
     const guard = requireEmailTemplate();
     if (guard) return guard;
     const { collectFiles: collectEmailTemplateFiles } = _emailTemplate;
     try {
       const token = await getValidAccessToken(portal_id);
+      const confirmation = await requirePortalConfirmation({ portal_id, confirm, token, action: "upload an email template" });
+      if (confirmation) return confirmation;
       const files = collectEmailTemplateFiles(template_path);
 
       const results = [];
