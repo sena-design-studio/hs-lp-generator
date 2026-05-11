@@ -471,11 +471,29 @@ Lines are also echoed to stderr with a `[log]` prefix, so they show up in Claude
 
 ## Updating the toolset
 
+### macOS
+
 - **New install**: receive `LP-Generator-Installer.pkg` from Filipe and double-click it. Have your two shared secrets ready (sent on Slack: HubSpot Client Secret + Auth Secret) plus a personal Anthropic API key (`console.anthropic.com`). The installer handles Node, the repo clone, Claude Desktop config, and the restart.
 - **Existing install / get latest code**: three options, in order of preference:
   1. Ask Claude in this project: *"Check for updates"* or *"Is there a newer version of the LP Generator?"* — Claude calls `check_for_updates`, reports the changelog, and asks whether to apply. On yes, it calls `update_self` and tells you to restart Claude Desktop.
   2. Run `Update LP Generator.command` from `~/.latigid/hs-lp-generator/` (manual fallback — does the same thing).
   3. From Terminal: `cd ~/.latigid/hs-lp-generator && bash update.sh`.
+
+### Windows
+
+- **New install**: open PowerShell and run:
+  ```
+  git clone https://github.com/sena-design-studio/hs-lp-generator.git
+  cd hs-lp-generator
+  powershell -ExecutionPolicy Bypass -File .\install.ps1
+  ```
+  The installer auto-installs Node.js and Git via `winget` if they're missing (may prompt for UAC), detects the OneDrive folder (typically `%USERPROFILE%\OneDrive - LATIGID LDA\MCP Claude - Documents`), creates junctions (not symlinks — no admin/developer mode required), writes `.env` + Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`), and restarts Claude Desktop. Have the same three secrets ready as on macOS (HubSpot Client Secret, Auth Secret, Anthropic API key).
+- **Existing install / get latest code**: same three options:
+  1. Ask Claude in this project: *"Check for updates"* (calls `check_for_updates` → `update_self`).
+  2. Double-click `Update LP Generator.bat` inside `%USERPROFILE%\.latigid\hs-lp-generator\`.
+  3. From PowerShell: `cd $env:USERPROFILE\.latigid\hs-lp-generator; powershell -ExecutionPolicy Bypass -File .\update.ps1`.
+
+The MCP itself (`index.js`) is pure Node.js and runs identically on macOS and Windows. The only platform-specific bits are the installer/updater scripts and the OneDrive auto-detection paths.
 
 ### When Claude should call `check_for_updates` / `update_self`
 
