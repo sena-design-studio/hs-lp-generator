@@ -1,12 +1,12 @@
-# ─────────────────────────────────────────────────────────────────────────────
-#  Latigid LP Generator — Updater (Windows)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+#  Latigid LP Generator -- Updater (Windows)
+# -----------------------------------------------------------------------------
 #  Pulls the latest code, refreshes deps, validates, and shows what changed.
 #  Double-click "Update LP Generator.bat" to run, or invoke directly:
 #    powershell -ExecutionPolicy Bypass -File .\update.ps1
 #
-#  Mirrors update.sh — same self-heal logic for .env and junctions.
-# ─────────────────────────────────────────────────────────────────────────────
+#  Mirrors update.sh -- same self-heal logic for .env and junctions.
+# -----------------------------------------------------------------------------
 
 $ErrorActionPreference = "Stop"
 
@@ -15,7 +15,7 @@ $INSTALL_DIR = Join-Path $env:USERPROFILE ".latigid\hs-lp-generator"
 function Log     { param($m) Write-Host ("  [OK]  " + $m) -ForegroundColor Green }
 function Warn    { param($m) Write-Host ("  [!]   " + $m) -ForegroundColor Yellow }
 function Fail    { param($m) Write-Host ("  [X]   " + $m) -ForegroundColor Red; Read-Host "  Press Enter to close"; exit 1 }
-function Header  { param($m) Write-Host ""; Write-Host ("━" * 50) -ForegroundColor Green; Write-Host ("  " + $m) -ForegroundColor White; Write-Host ("━" * 50) -ForegroundColor Green; Write-Host "" }
+function Header  { param($m) Write-Host ""; Write-Host ("=" * 50) -ForegroundColor Green; Write-Host ("  " + $m) -ForegroundColor White; Write-Host ("=" * 50) -ForegroundColor Green; Write-Host "" }
 
 trap {
   Write-Host ""
@@ -26,7 +26,7 @@ trap {
 }
 
 Clear-Host
-Header "Latigid LP Generator — Update"
+Header "Latigid LP Generator -- Update"
 
 if (-not (Test-Path (Join-Path $INSTALL_DIR ".git"))) {
   Fail "LP Generator not installed at $INSTALL_DIR. Run install.ps1 first."
@@ -35,7 +35,7 @@ if (-not (Test-Path (Join-Path $INSTALL_DIR ".git"))) {
 Push-Location $INSTALL_DIR
 try {
 
-  # ─── Check current vs. remote ────────────────────────────────────────────
+  # --- Check current vs. remote --------------------------------------------
   $CURRENT = (& git rev-parse --short HEAD).Trim()
   Log "Current version: $CURRENT"
 
@@ -51,31 +51,31 @@ try {
     exit 0
   }
 
-  # ─── Show changelog before applying ──────────────────────────────────────
+  # --- Show changelog before applying --------------------------------------
   Write-Host ""
   Write-Host ("  New commits ($CURRENT -> $LATEST):") -ForegroundColor White
   & git log --oneline --no-decorate "$CURRENT..origin/main" | ForEach-Object { Write-Host "    $_" }
   Write-Host ""
 
-  # ─── Pull and refresh deps ───────────────────────────────────────────────
+  # --- Pull and refresh deps -----------------------------------------------
   & git pull --quiet origin main
   Log "Pulled to $LATEST"
 
   # Reinstall deps only if package files changed
   $changedFiles = & git diff --name-only "$CURRENT" "$LATEST"
   if ($changedFiles -match '^package(-lock)?\.json$') {
-    Write-Host "  package.json changed — reinstalling dependencies..."
+    Write-Host "  package.json changed -- reinstalling dependencies..."
     & npm install --quiet
     Log "Dependencies refreshed"
   } else {
     Log "Dependencies unchanged"
   }
 
-  # ─── Self-heal config (.env + junctions) ─────────────────────────────────
+  # --- Self-heal config (.env + junctions) ---------------------------------
   # Same two failure modes as update.sh:
   #   1. New shared OneDrive folder added in code that existing installs
   #      don't have a junction for.
-  #   2. .env or junctions copied from another user's machine — paths point
+  #   2. .env or junctions copied from another user's machine -- paths point
   #      to C:\Users\<someone-else>\... and never resolve. Validate that
   #      ONEDRIVE_PATH (and every junction target) lives under $USERPROFILE
   #      and rebuild anything that doesn't.
@@ -100,10 +100,10 @@ try {
       if ($resolvedOnedrive.StartsWith($userProfileNormalized + '\', [StringComparison]::OrdinalIgnoreCase)) {
         $onedriveValid = $true
       } else {
-        Warn "ONEDRIVE_PATH from .env points outside your user profile ($ONEDRIVE_PATH) — looks like the .env was copied from another user. Re-detecting."
+        Warn "ONEDRIVE_PATH from .env points outside your user profile ($ONEDRIVE_PATH) -- looks like the .env was copied from another user. Re-detecting."
       }
     } else {
-      Warn "ONEDRIVE_PATH from .env points to a non-existent folder ($ONEDRIVE_PATH) — re-detecting"
+      Warn "ONEDRIVE_PATH from .env points to a non-existent folder ($ONEDRIVE_PATH) -- re-detecting"
     }
   }
 
@@ -140,7 +140,7 @@ try {
         if (-not $envContent.EndsWith("`n")) { $envContent += "`n" }
         $envContent += "ONEDRIVE_PATH=$ONEDRIVE_PATH`n"
       }
-      # UTF-8 NO BOM — see install.ps1 for rationale (Node's utf8 readFileSync
+      # UTF-8 NO BOM -- see install.ps1 for rationale (Node's utf8 readFileSync
       # doesn't strip BOM, which would corrupt the first .env line).
       [System.IO.File]::WriteAllText($ENV_FILE, $envContent, (New-Object System.Text.UTF8Encoding $false))
       Log "Corrected .env: ONEDRIVE_PATH=$ONEDRIVE_PATH"
@@ -174,7 +174,7 @@ try {
           if ($currentTarget -is [array]) { $currentTarget = $currentTarget[0] }
           $currentTargetStr = "$currentTarget".TrimEnd('\')
           if (-not $currentTargetStr.StartsWith($userProfileNormalized + '\', [StringComparison]::OrdinalIgnoreCase)) {
-            Warn "Junction $f points outside your user profile ($currentTargetStr) — rebuilding"
+            Warn "Junction $f points outside your user profile ($currentTargetStr) -- rebuilding"
             Remove-Item $link -Force -Recurse
             $rebuiltAny = $true
           }
@@ -189,7 +189,7 @@ try {
           Log "Linked: $f -> $target"
           $createdAny = $true
         } else {
-          Warn "Skipped $f — OneDrive target resolves to '$resolvedTarget' (outside your user profile)."
+          Warn "Skipped $f -- OneDrive target resolves to '$resolvedTarget' (outside your user profile)."
           Warn "  Likely a stale link synced into the shared folder. Tell Filipe."
           $skippedAny = $true
         }
@@ -200,22 +200,22 @@ try {
       Log "All shared folders already linked correctly"
     }
   } else {
-    Warn "OneDrive path not found — skipping junction self-heal. If the MCP fails to start, run install.ps1 again."
+    Warn "OneDrive path not found -- skipping junction self-heal. If the MCP fails to start, run install.ps1 again."
   }
 
-  # ─── Validate ────────────────────────────────────────────────────────────
+  # --- Validate ------------------------------------------------------------
   & node --check index.js 2>$null
   if ($LASTEXITCODE -eq 0) {
     Log "index.js syntax OK"
   } else {
-    Warn "index.js failed syntax check — please report this to Filipe"
+    Warn "index.js failed syntax check -- please report this to Filipe"
   }
 
 } finally {
   Pop-Location
 }
 
-# ─── Done ──────────────────────────────────────────────────────────────────
+# --- Done ------------------------------------------------------------------
 Header "Update complete"
 
 Write-Host "  Restart Claude Desktop (quit from the system tray, then reopen)" -ForegroundColor White
